@@ -35,6 +35,21 @@ description_key = "settings.interface.description"
 default = ""
 
 [[setting]]
+key = "wan_interfaces"
+type = "string_list"
+label_key = "settings.wan_interfaces.label"
+description_key = "settings.wan_interfaces.description"
+default = []
+advanced = true
+
+[[setting]]
+key = "hidden_interfaces"
+type = "string_list"
+label_key = "settings.hidden_interfaces.label"
+description_key = "settings.hidden_interfaces.description"
+default = []
+
+[[setting]]
 key = "auto_detect"
 type = "bool"
 label_key = "settings.auto_detect.label"

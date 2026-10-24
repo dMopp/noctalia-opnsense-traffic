@@ -16,7 +16,8 @@ network pulls through the firewall, not just the local machine.
 
 - An OPNsense firewall reachable over HTTPS from this machine.
 - An API key for a user with the privilege **Reporting: Traffic**, plus
-  **Status: Interfaces** if you want auto-detect. Do not use an admin key.
+  **Status: Interfaces** (recommended: auto-detect and WAN recognition). Do not
+  use an admin key.
 
 ### Creating the API key
 
@@ -27,7 +28,8 @@ network pulls through the firewall, not just the local machine.
    - No group membership (not `admins`).
 2. In the same dialog, field **Privileges**, select:
    - **Reporting: Traffic** - required (`api/diagnostics/traffic/*`)
-   - **Status: Interfaces** - only for auto-detect (`api/interfaces/overview/*`)
+   - **Status: Interfaces** - recommended (`api/interfaces/overview/*`): needed
+     for auto-detect and to recognise WAN interfaces by their default route
 
    Save.
 3. In the user list, create an **API key** for that user. OPNsense downloads
@@ -82,7 +84,10 @@ as JSON.
 3. Hover a widget for interface and both rates. Left-click opens the panel:
    both directions with current rate, line speed and peak, a **Reset peaks**
    button, and every interface on the firewall with its live rates. Click an
-   interface to copy its identifier for the **Interface** setting.
+   interface to copy its identifier for the **Interface** setting, or its eye
+   button to hide it. Hidden interfaces are listed collapsed at the bottom,
+   where the eye button shows them again (interfaces hidden through the
+   `hidden_interfaces` setting can only be shown again there).
 
 ```sh
 noctalia msg panel-toggle dmopp/opnsense-traffic:panel
@@ -91,9 +96,11 @@ noctalia msg panel-toggle dmopp/opnsense-traffic:panel
 Errors (no URL, key file missing, HTTP 401/403, unknown interface) show `--` in
 the bar and the reason in the tooltip and the panel.
 
-Directions are seen from the firewall interface: on the WAN interface "bytes
-received" is your download. On a LAN or VLAN interface they are the other way
-round.
+Download and upload are always seen from the network behind an interface: on
+WAN they are your internet download and upload, on a LAN or VLAN interface
+download is what the clients in that network download. OPNsense counts from
+the firewall's side, so the plugin flips the counters of every interface that
+is not WAN-side (see `wan_interfaces`).
 
 ## Settings
 
@@ -104,6 +111,8 @@ Plugin settings (shared by all widgets):
 | `url` | `string` | `""` | Base URL of the OPNsense web GUI including the port, e.g. `https://opnsense.lan:4443`. A trailing `/api` is ignored. |
 | `credentials_file` | `file` | `~/.config/noctalia-opnsense/apikey.txt` | File with `key=` and `secret=` lines, as OPNsense downloads it. |
 | `interface` | `string` | `""` | Identifier (`opt1`), description (`WAN`) or device (`pppoe0`), case-insensitive. |
+| `wan_interfaces` | `string_list` | `[]` | Advanced. Interfaces whose counters are taken as they are (received = download). All others are flipped. Empty: interfaces with a default route plus any with `wan` in identifier or name, which covers OPNsense's default WAN and a PPPoE parent port named like it. Set it for other multi-WAN or transport interfaces. |
+| `hidden_interfaces` | `string_list` | `[]` | Identifiers, names or devices to hide. Hidden interfaces get no panel row and their counters are not evaluated; the API still returns them, as OPNsense has no filter for this call. The interface shown in the bar is never hidden. |
 | `auto_detect` | `bool` | `false` | Only while `interface` is empty: use the interface that carries the default route. Re-checked every 10 minutes. Needs **Status: Interfaces**. |
 | `poll_interval` | `int` | `2` | Seconds between two API requests (1-60). This is the only thing that sets the API load. |
 | `line_down_mbit` / `line_up_mbit` | `int` | `0` | Bandwidth of your line in Mbit/s. Scales gauge and graph and enables the highlight. `0` = adaptive: scale to the measured peak. |
@@ -130,13 +139,17 @@ Widget settings (per bar widget, matching the built-in network widgets):
 ```sh
 noctalia msg plugin dmopp/opnsense-traffic:service all refresh       # poll now, re-run auto-detect
 noctalia msg plugin dmopp/opnsense-traffic:service all reset-peaks   # forget the peaks of the selected interface
+noctalia msg plugin dmopp/opnsense-traffic:service all hide opt5      # hide an interface by identifier (like the eye button)
+noctalia msg plugin dmopp/opnsense-traffic:service all unhide opt5    # show it again
 ```
 
 ## Notes
 
 - **Network:** `GET <url>/api/diagnostics/traffic/interface` every
-  `poll_interval` seconds; with auto-detect also
-  `GET <url>/api/interfaces/overview/interfaces_info` every 10 minutes. HTTP
+  `poll_interval` seconds, and
+  `GET <url>/api/interfaces/overview/interfaces_info` every 10 minutes to find
+  the default route (auto-detect, WAN side). Without the **Status: Interfaces**
+  privilege the second call fails quietly unless auto-detect needs it. HTTP
   basic auth with the API key, through Noctalia's HTTP client (no `curl`
   process, the key never shows up in a command line). Nothing else is
   contacted.
@@ -146,6 +159,9 @@ noctalia msg plugin dmopp/opnsense-traffic:service all reset-peaks   # forget th
   (`noctalia.pluginDataDir()`): per interface the highest rates since the last
   reset and the highest rate per 15-minute slot of the last 30 days. Written
   at most once a minute and on **Reset peaks**.
+- **Files written:** `hidden.json` in the plugin data directory: the
+  interface ids hidden with the eye button. Plugins cannot change their own
+  settings, so the panel keeps its own list next to `hidden_interfaces`.
 - **Rates** are the difference of the interface byte counters between two
   polls, so they are averages over `poll_interval`. A counter that goes
   backwards (firewall reboot) is skipped for one sample.

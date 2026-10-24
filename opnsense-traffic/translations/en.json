@@ -16,6 +16,12 @@
   "panel": {
     "copy_hint": "Click to copy \"{id}\" for the interface setting",
     "download": "Download",
+    "hidden_count": {
+      "one": "{count} hidden interface",
+      "other": "{count} hidden interfaces"
+    },
+    "hidden_in_settings": "hidden in settings",
+    "hide": "Hide this interface",
     "hold_hours": {
       "one": "Peaks are kept for {count} hour",
       "other": "Peaks are kept for {count} hours"
@@ -25,6 +31,7 @@
     "of_line": "line {line}",
     "peak": "Peak {peak} at {at} · measured since {since}",
     "reset_peaks": "Reset peaks",
+    "show": "Show this interface again",
     "title": "OPNsense Traffic",
     "upload": "Upload"
   },
@@ -54,6 +61,10 @@
       "after": "After",
       "before": "Before",
       "label": "Glyph position"
+    },
+    "hidden_interfaces": {
+      "label": "Hidden interfaces",
+      "description": "Identifiers, names or devices to leave out of the panel; their counters are not evaluated. The eye button in the panel hides more on top of this list."
     },
     "highlight_color": {
       "description": "The value fades to this color between the two highlight thresholds (needs a line speed).",
@@ -118,6 +129,10 @@
       "graph": "Graph",
       "label": "Visualization",
       "none": "None"
+    },
+    "wan_interfaces": {
+      "label": "WAN-side interfaces",
+      "description": "Interfaces counted from the firewall side (received = download). All others are counted from the network behind them, so download is what their clients download. Empty: interfaces with a default route plus any with \"wan\" in identifier or name."
     }
   },
   "tooltip": {

@@ -16,6 +16,12 @@
   "panel": {
     "copy_hint": "Klicken kopiert „{id}“ für die Interface-Einstellung",
     "download": "Download",
+    "hidden_count": {
+      "one": "{count} ausgeblendetes Interface",
+      "other": "{count} ausgeblendete Interfaces"
+    },
+    "hidden_in_settings": "in den Einstellungen ausgeblendet",
+    "hide": "Interface ausblenden",
     "hold_hours": {
       "one": "Spitzen gelten {count} Stunde",
       "other": "Spitzen gelten {count} Stunden"
@@ -25,6 +31,7 @@
     "of_line": "Leitung {line}",
     "peak": "Spitze {peak} um {at} · gemessen seit {since}",
     "reset_peaks": "Spitzen zurücksetzen",
+    "show": "Interface wieder anzeigen",
     "title": "OPNsense-Traffic",
     "upload": "Upload"
   },
@@ -54,6 +61,10 @@
       "after": "Danach",
       "before": "Davor",
       "label": "Symbolposition"
+    },
+    "hidden_interfaces": {
+      "label": "Ausgeblendete Interfaces",
+      "description": "Kennungen, Namen oder Geräte, die im Panel fehlen sollen; ihre Zähler werden nicht ausgewertet. Mit dem Augen-Knopf im Panel lassen sich weitere ausblenden."
     },
     "highlight_color": {
       "description": "Der Wert geht zwischen den beiden Hervorhebungsschwellen in diese Farbe über (braucht eine Leitungsgeschwindigkeit).",
@@ -118,6 +129,10 @@
       "graph": "Graph",
       "label": "Darstellung",
       "none": "Keine"
+    },
+    "wan_interfaces": {
+      "label": "WAN-seitige Interfaces",
+      "description": "Interfaces, die aus Sicht der Firewall gezählt werden (empfangen = Download). Alle anderen zählen aus Sicht des Netzes dahinter, Download ist also, was ihre Geräte laden. Leer: Interfaces mit Default-Route plus alle mit „wan“ in Kennung oder Name."
     }
   },
   "tooltip": {

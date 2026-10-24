@@ -9,6 +9,7 @@ local SNAPSHOT_KEY = "opnsense_snapshot"
 local COMMAND_KEY = "opnsense_command"
 
 local snapshot = noctalia.state.get(SNAPSHOT_KEY) or {}
+local showHidden = false
 
 local function sendRefresh()
 	noctalia.state.set(COMMAND_KEY, { action = "refresh", nonce = tostring(noctalia.nowMs()) })
@@ -60,6 +61,10 @@ local function directionRow(glyph, labelKey, value, lineKey, peak, peakAt, since
 	})
 end
 
+local function sendVisibility(action, id)
+	noctalia.state.set(COMMAND_KEY, { action = action, id = id, nonce = tostring(noctalia.nowMs()) })
+end
+
 local function interfaceRow(iface)
 	local selected = iface.id == snapshot.selected
 	local meta = iface.id
@@ -86,6 +91,46 @@ local function interfaceRow(iface)
 		ui.label({ text = "↓ " .. format.rate(iface.rx, "auto", true), fontSize = 12, color = "on_surface", textAlign = "end" }),
 		ui.row({ minWidth = 64, justify = "end" }, {
 			ui.label({ text = "↑ " .. format.rate(iface.tx, "auto", true), fontSize = 12, color = "on_surface", textAlign = "end" }),
+		}),
+		-- The selected interface cannot be hidden; keep the column aligned.
+		selected and ui.box({ width = 28, height = 28, fill = "on_surface/0" }) or ui.button({
+			glyph = "eye",
+			glyphSize = 14,
+			variant = "ghost",
+			controlSize = "sm",
+			tooltip = noctalia.tr("panel.hide"),
+			onClick = function()
+				sendVisibility("hide", iface.id)
+			end,
+		}),
+	})
+end
+
+-- Hidden interfaces: no rates. Panel-hidden ones get an eye button to show
+-- them again; ones hidden in the settings can only be shown there.
+local function hiddenRow(iface)
+	local meta = iface.id
+	if iface.device ~= "" then
+		meta = meta .. " · " .. iface.device
+	end
+	local fromSettings = iface.by == "settings"
+	if fromSettings then
+		meta = meta .. " · " .. noctalia.tr("panel.hidden_in_settings")
+	end
+	return ui.row({ key = "hidden-" .. iface.id, align = "center", gap = 10, paddingH = 8, paddingV = 4 }, {
+		ui.column({ flexGrow = 1, gap = 1 }, {
+			ui.label({ text = iface.name, fontSize = 13, color = "on_surface_variant", maxLines = 1 }),
+			ui.label({ text = meta, fontSize = 11, color = "on_surface_variant", maxLines = 1 }),
+		}),
+		fromSettings and ui.box({ width = 28, height = 28, fill = "on_surface/0" }) or ui.button({
+			glyph = "eye-off",
+			glyphSize = 14,
+			variant = "ghost",
+			controlSize = "sm",
+			tooltip = noctalia.tr("panel.show"),
+			onClick = function()
+				sendVisibility("unhide", iface.id)
+			end,
 		}),
 	})
 end
@@ -130,6 +175,30 @@ local function render()
 			table.insert(rows, interfaceRow(iface))
 		end
 		table.insert(body, ui.column({ gap = 2 }, rows))
+	end
+
+	local hidden = snapshot.hidden or {}
+	if #hidden > 0 then
+		table.insert(body, ui.button({
+			text = noctalia.trp("panel.hidden_count", #hidden),
+			glyph = showHidden and "chevron-up" or "chevron-down",
+			fontSize = 12,
+			glyphSize = 12,
+			variant = "ghost",
+			controlSize = "sm",
+			contentAlign = "start",
+			onClick = function()
+				showHidden = not showHidden
+				render()
+			end,
+		}))
+		if showHidden then
+			local rows = {}
+			for _, iface in ipairs(hidden) do
+				table.insert(rows, hiddenRow(iface))
+			end
+			table.insert(body, ui.column({ gap = 2 }, rows))
+		end
 	end
 
 	panel.render(ui.column({ flexGrow = 1, gap = 12 }, {
