@@ -16,8 +16,15 @@
   "panel": {
     "copy_hint": "Klicken kopiert „{id}“ für die Interface-Einstellung",
     "download": "Download",
+    "hold_hours": {
+      "one": "Spitzen gelten {count} Stunde",
+      "other": "Spitzen gelten {count} Stunden"
+    },
+    "hold_unlimited": "Spitzen gelten bis zum Zurücksetzen",
     "interfaces": "Interfaces",
     "of_line": "Leitung {line}",
+    "peak": "Spitze {peak} um {at} · gemessen seit {since}",
+    "reset_peaks": "Spitzen zurücksetzen",
     "title": "OPNsense-Traffic",
     "upload": "Upload"
   },
@@ -74,6 +81,10 @@
     "line_up_mbit": {
       "description": "Bandbreite deiner Leitung in Mbit/s, z. B. laut Vertrag. Skaliert Gauge und Graph und schaltet die Hervorhebung ein. 0 skaliert auf die höchste gesehene Rate und hebt nie hervor.",
       "label": "Leitung Upload (Mbit/s)"
+    },
+    "peak_hold_hours": {
+      "label": "Spitzen merken (Stunden)",
+      "description": "Wie lange eine gemessene Spitze für die adaptive Skala zählt (ohne Leitungsgeschwindigkeit). 0 = bis zum Zurücksetzen im Panel. Wird gespeichert und übersteht Neustarts. Erzeugt keine zusätzlichen API-Abfragen."
     },
     "poll_interval": {
       "description": "Sekunden zwischen zwei API-Abfragen.",

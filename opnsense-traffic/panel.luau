@@ -18,7 +18,23 @@ local function lineBytes(key)
 	return (tonumber(noctalia.getConfig(key)) or 0) * 125000
 end
 
-local function directionRow(glyph, labelKey, value, lineKey, peak)
+-- Time of day for today's timestamps, with the date for older ones.
+local function clock(unixSeconds)
+	if os.time() - unixSeconds >= 20 * 3600 then
+		return noctalia.formatTime("{:%Y-%m-%d %H:%M}", unixSeconds)
+	end
+	return noctalia.formatTime(noctalia.timeFormat(), unixSeconds)
+end
+
+-- "Peak 87.3 Mbit/s at 18:03 · since 17:55", or nil before the first sample.
+local function peakText(peak, peakAt, since)
+	if (tonumber(peak) or 0) <= 0 or peakAt == nil or since == nil then
+		return nil
+	end
+	return noctalia.tr("panel.peak", { peak = format.mbit(peak), at = clock(peakAt), since = clock(since) })
+end
+
+local function directionRow(glyph, labelKey, value, lineKey, peak, peakAt, since)
 	local line = lineBytes(lineKey)
 	local max = line > 0 and line or (tonumber(peak) or 0)
 	local progress = max > 0 and math.max(0, math.min(1, value / max)) or 0
@@ -26,13 +42,18 @@ local function directionRow(glyph, labelKey, value, lineKey, peak)
 	if line > 0 then
 		meta = meta .. " · " .. noctalia.tr("panel.of_line", { line = format.mbit(line) })
 	end
+	local lines = {
+		ui.label({ text = noctalia.tr(labelKey), fontSize = 13, fontWeight = "medium", color = "on_surface" }),
+		ui.label({ text = meta, fontSize = 11, color = "on_surface_variant", maxLines = 1 }),
+	}
+	local peakLine = peakText(peak, peakAt, since)
+	if peakLine ~= nil then
+		table.insert(lines, ui.label({ text = peakLine, fontSize = 11, color = "on_surface_variant", maxLines = 1 }))
+	end
 	return ui.column({ gap = 6 }, {
 		ui.row({ align = "center", gap = 10 }, {
 			ui.glyph({ name = glyph, size = 18, color = "primary" }),
-			ui.column({ flexGrow = 1, gap = 1 }, {
-				ui.label({ text = noctalia.tr(labelKey), fontSize = 13, fontWeight = "medium", color = "on_surface" }),
-				ui.label({ text = meta, fontSize = 11, color = "on_surface_variant", maxLines = 1 }),
-			}),
+			ui.column({ flexGrow = 1, gap = 1 }, lines),
 			ui.label({ text = format.rate(value, "auto", false), fontSize = 13, color = "on_surface", textAlign = "end" }),
 		}),
 		ui.progress({ progress = progress, flexGrow = 1, radius = 3, height = 6 }),
@@ -82,8 +103,22 @@ local function render()
 			title = title .. " (" .. snapshot.selectedDevice .. ")"
 		end
 		table.insert(body, ui.label({ text = title, fontSize = 12, color = "on_surface_variant" }))
-		table.insert(body, directionRow("download", "panel.download", tonumber(snapshot.rx) or 0, "line_down_mbit", history.peakRx))
-		table.insert(body, directionRow("upload", "panel.upload", tonumber(snapshot.tx) or 0, "line_up_mbit", history.peakTx))
+		table.insert(body, directionRow("download", "panel.download", tonumber(snapshot.rx) or 0, "line_down_mbit", history.peakRx, history.peakRxAt, history.since))
+		table.insert(body, directionRow("upload", "panel.upload", tonumber(snapshot.tx) or 0, "line_up_mbit", history.peakTx, history.peakTxAt, history.since))
+		local hold = tonumber(history.hold) or 0
+		local holdText = hold > 0 and noctalia.trp("panel.hold_hours", hold) or noctalia.tr("panel.hold_unlimited")
+		table.insert(body, ui.row({ align = "center", gap = 8 }, {
+			ui.label({ text = holdText, fontSize = 11, color = "on_surface_variant", flexGrow = 1, maxLines = 2 }),
+			ui.button({
+				text = noctalia.tr("panel.reset_peaks"),
+				glyph = "rotate",
+				fontSize = 11,
+				glyphSize = 12,
+				variant = "ghost",
+				controlSize = "sm",
+				onClick = "onResetPeaksClicked",
+			}),
+		}))
 	end
 
 	local interfaces = snapshot.interfaces or {}
@@ -117,6 +152,10 @@ end)
 
 function onOpen(_context)
 	render()
+end
+
+function onResetPeaksClicked()
+	noctalia.state.set(COMMAND_KEY, { action = "reset_peaks", nonce = tostring(noctalia.nowMs()) })
 end
 
 function onRefreshClicked()

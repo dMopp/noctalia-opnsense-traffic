@@ -1,10 +1,9 @@
 # OPNsense Traffic
 
-Shows the download and upload rate of one OPNsense interface in the Noctalia
-bar. The widget looks and behaves like the built-in `network_rx` /
-`network_tx` widgets: glyph, gauge or graph, value, same units and the same
-highlight gradient. A left-click opens a panel with both directions against the
-line speed and the live rates of every interface on the firewall.
+Shows the download and upload rate of one OPNsense interface in the bar, styled
+like the built-in `network_rx` / `network_tx` widgets (glyph, gauge or graph,
+value, same units and highlight gradient). Useful to see what the whole
+network pulls through the firewall, not just the local machine.
 
 ## Plugin
 
@@ -12,33 +11,29 @@ line speed and the live rates of every interface on the firewall.
 | --- | --- |
 | ID | `dmopp/opnsense-traffic` |
 | Entries | Bar widget: `traffic`; panel: `panel`; service: `service` |
-| API calls | `GET /api/diagnostics/traffic/interface` (every poll), `GET /api/interfaces/overview/interfaces_info` (auto-detect only, every 10 min) |
 
-The service reads the byte counters of all interfaces and turns the difference
-between two polls into a rate. Counters that go backwards (firewall reboot,
-interface re-attached) are skipped for one sample.
+## Requirements
 
-## Creating the API key
+- An OPNsense firewall reachable over HTTPS from this machine.
+- An API key for a user with the privilege **Reporting: Traffic**, plus
+  **Status: Interfaces** if you want auto-detect. Do not use an admin key.
 
-The plugin only reads. Give it its own user with exactly these privileges, not
-an admin key.
+### Creating the API key
 
 1. **System → Access → Users → +** (Add).
    - Username: e.g. `noctalia-traffic`
-   - Password: tick **Generate a scrambled password** - the user never logs in
+   - Password: tick **Generate a scrambled password**; the user never logs in
      to the web GUI.
-   - Description: e.g. `Noctalia traffic widget (read-only)`
-   - Leave group membership empty (no `admins`).
+   - No group membership (not `admins`).
 2. In the same dialog, field **Privileges**, select:
-   - **Reporting: Traffic** - required (`api/diagnostics/traffic/*`).
-   - **Status: Interfaces** - only for auto-detect
-     (`api/interfaces/overview/*`). Leave it out when you set the interface by
-     hand.
+   - **Reporting: Traffic** - required (`api/diagnostics/traffic/*`)
+   - **Status: Interfaces** - only for auto-detect (`api/interfaces/overview/*`)
+
    Save.
-3. **API keys → +** on the same user. OPNsense downloads a file
-   `<hostname>_<user>_apikey.txt` with two lines, `key=…` and `secret=…`. The
+3. In the user list, create an **API key** for that user. OPNsense downloads
+   `<hostname>_<user>_apikey.txt` with the lines `key=…` and `secret=…`. The
    secret is shown only this once.
-4. Put that file where the plugin looks for it and lock it down:
+4. Store the file where the plugin looks for it:
 
    ```sh
    mkdir -p ~/.config/noctalia-opnsense
@@ -46,19 +41,16 @@ an admin key.
    chmod 600 ~/.config/noctalia-opnsense/apikey.txt
    ```
 
-5. Check it - the first call must answer 200, the second 403:
+5. Check it. The first request must return `200`, the second `403`:
 
    ```sh
    f=~/.config/noctalia-opnsense/apikey.txt
-   u="$(sed -n 's/^key=//p' $f):$(sed -n 's/^secret=//p' $f)"
+   u="$(sed -n 's/^key=//p' "$f"):$(sed -n 's/^secret=//p' "$f")"
    curl -s -o /dev/null -w '%{http_code}\n' -u "$u" https://opnsense.lan/api/diagnostics/traffic/interface
    curl -s -o /dev/null -w '%{http_code}\n' -u "$u" https://opnsense.lan/api/core/firmware/status
    ```
 
-The key lives only in that file. It is never stored in the Noctalia settings,
-so it does not end up in `settings.toml` or in anything exported from it.
-
-The same steps over the API (with an admin key), if you prefer that:
+The same over the API, with an admin key in `$ADMIN` (`key:secret`):
 
 ```sh
 curl -u "$ADMIN" -X POST -H 'Content-Type: application/json' \
@@ -67,63 +59,94 @@ curl -u "$ADMIN" -X POST -H 'Content-Type: application/json' \
 curl -u "$ADMIN" -X POST https://opnsense.lan/api/auth/user/add_api_key/noctalia-traffic
 ```
 
-`add_api_key` takes the user name, not the UUID, and returns `key` and
-`secret` as JSON.
-
-## Settings
-
-Plugin settings (Settings → Plugins → gear on the row):
-
-| Setting | Default | Meaning |
-| --- | --- | --- |
-| OPNsense URL | - | Base URL of the web GUI incl. port, e.g. `https://opnsense.lan:4443` |
-| API key file | `~/.config/noctalia-opnsense/apikey.txt` | `key=`/`secret=` file from step 3 |
-| Interface | - | Identifier (`opt1`), description (`WAN`) or device (`pppoe0`), case-insensitive. The panel lists all of them; click a row to copy its identifier. |
-| Detect WAN automatically | off | Only used while *Interface* is empty: takes the interface that carries the default route. Needs **Status: Interfaces**. |
-| Refresh interval | 2 s | Time between two API calls |
-| Line speed down / up | 0 | Bandwidth of your line in Mbit/s (e.g. from the provider contract). Scales gauge and graph and turns on the highlight. 0 scales to the highest rate seen and never highlights. |
-| Highlight from / full at | 50 % / 90 % | Share of the line speed where the value starts fading to the highlight color and where it reaches it. |
-| Allow untrusted certificate | off | Advanced. Skips certificate checks - only for a self-signed GUI certificate. |
-
-Widget settings (per bar widget, like the built-in network widgets):
-direction (download/upload), unit, compact, visualization (gauge/graph/none),
-show value, show units, minimum value width, show glyph, glyph, glyph position,
-highlight color.
-
-Download and upload are seen from the firewall interface: on the WAN interface
-"bytes received" is your download. On a LAN/VLAN interface the directions are
-the other way round (traffic received from clients is their upload).
+`add_api_key` takes the user name (not the UUID) and returns `key` and `secret`
+as JSON.
 
 ## Usage
 
-Add the widget `dmopp/opnsense-traffic:traffic` twice to a bar, one with
-direction *Download*, one with *Upload*:
+1. Enable the plugin and open its settings (Settings → Plugins → gear). Set
+   **OPNsense URL** and either **Interface** or **Detect WAN automatically**.
+2. Add the bar widget `dmopp/opnsense-traffic:traffic` twice, one with
+   **Direction** *Download* and one with *Upload*, like the built-in pair:
 
-```toml
-[widget.opnsense_rx]
-type = "dmopp/opnsense-traffic:traffic"
-direction = "download"
+   ```toml
+   [widget.opnsense_rx]
+   type = "dmopp/opnsense-traffic:traffic"
+   direction = "download"
 
-[widget.opnsense_tx]
-type = "dmopp/opnsense-traffic:traffic"
-direction = "upload"
-```
+   [widget.opnsense_tx]
+   type = "dmopp/opnsense-traffic:traffic"
+   direction = "upload"
+   ```
+
+3. Hover a widget for interface and both rates. Left-click opens the panel:
+   both directions with current rate, line speed and peak, a **Reset peaks**
+   button, and every interface on the firewall with its live rates. Click an
+   interface to copy its identifier for the **Interface** setting.
 
 ```sh
 noctalia msg panel-toggle dmopp/opnsense-traffic:panel
-noctalia msg plugin dmopp/opnsense-traffic:service all refresh
 ```
 
-Errors (no URL, key file missing, HTTP 401/403, unknown interface) show `--`
-in the bar and the reason in the tooltip and the panel.
+Errors (no URL, key file missing, HTTP 401/403, unknown interface) show `--` in
+the bar and the reason in the tooltip and the panel.
 
-## Local development
+Directions are seen from the firewall interface: on the WAN interface "bytes
+received" is your download. On a LAN or VLAN interface they are the other way
+round.
+
+## Settings
+
+Plugin settings (shared by all widgets):
+
+| Setting | Type | Default | Description |
+| --- | --- | --- | --- |
+| `url` | `string` | `""` | Base URL of the OPNsense web GUI including the port, e.g. `https://opnsense.lan:4443`. A trailing `/api` is ignored. |
+| `credentials_file` | `file` | `~/.config/noctalia-opnsense/apikey.txt` | File with `key=` and `secret=` lines, as OPNsense downloads it. |
+| `interface` | `string` | `""` | Identifier (`opt1`), description (`WAN`) or device (`pppoe0`), case-insensitive. |
+| `auto_detect` | `bool` | `false` | Only while `interface` is empty: use the interface that carries the default route. Re-checked every 10 minutes. Needs **Status: Interfaces**. |
+| `poll_interval` | `int` | `2` | Seconds between two API requests (1-60). This is the only thing that sets the API load. |
+| `line_down_mbit` / `line_up_mbit` | `int` | `0` | Bandwidth of your line in Mbit/s. Scales gauge and graph and enables the highlight. `0` = adaptive: scale to the measured peak. |
+| `peak_hold_hours` | `int` | `0` | Adaptive scale only: how long a peak counts, in hours (up to 720). `0` keeps it until **Reset peaks**. |
+| `highlight_from` / `highlight_full` | `int` | `50` / `90` | Percent of the line speed where the value starts fading to the highlight color and where it reaches it. Needs a line speed. |
+| `allow_insecure_tls` | `bool` | `false` | Advanced. Skip certificate checks, only for a self-signed GUI certificate. |
+
+Widget settings (per bar widget, matching the built-in network widgets):
+
+| Setting | Type | Default | Description |
+| --- | --- | --- | --- |
+| `direction` | `select` | `download` | `download` or `upload` |
+| `speed_unit` | `select` | `auto` | `auto`, `kb` or `mb` (decimal, 1 kB = 1000 B) |
+| `speed_compact` | `bool` | `false` | `1.2M` instead of `1.2 MB/s` |
+| `visualization` | `select` | `gauge` | `gauge`, `graph` (last 40 samples) or `none`; graph falls back to gauge on a vertical bar |
+| `show_value` / `show_units` | `bool` | `true` | Show the value, with or without its unit |
+| `label_min_width` | `int` | `0` | Minimum width of the value, keeps the widget from jumping |
+| `show_glyph` / `glyph` | `bool` / `glyph` | `true` / `""` | Glyph; empty uses `download` or `upload` |
+| `glyph_position` | `select` | `before` | `before` or `after` the value |
+| `highlight_color` | `color` | `error` | Color the value fades to near the line speed |
+
+## IPC
 
 ```sh
-noctalia msg plugins source add opnsense-traffic-local path ~/coding-projects/noctalia-opnsense-traffic
-noctalia msg plugins enable dmopp/opnsense-traffic
+noctalia msg plugin dmopp/opnsense-traffic:service all refresh       # poll now, re-run auto-detect
+noctalia msg plugin dmopp/opnsense-traffic:service all reset-peaks   # forget the peaks of the selected interface
 ```
 
-`.luau` edits hot-reload; manifest changes need `noctalia msg config-reload`.
+## Notes
 
-Written with help from Claude Code.
+- **Network:** `GET <url>/api/diagnostics/traffic/interface` every
+  `poll_interval` seconds; with auto-detect also
+  `GET <url>/api/interfaces/overview/interfaces_info` every 10 minutes. HTTP
+  basic auth with the API key, through Noctalia's HTTP client (no `curl`
+  process, the key never shows up in a command line). Nothing else is
+  contacted.
+- **Files read:** `credentials_file`. The key is never stored in the Noctalia
+  settings, so it does not end up in `settings.toml` or in any export of it.
+- **Files written:** `peaks.json` in the plugin data directory
+  (`noctalia.pluginDataDir()`): per interface the highest rates since the last
+  reset and the highest rate per 15-minute slot of the last 30 days. Written
+  at most once a minute and on **Reset peaks**.
+- **Rates** are the difference of the interface byte counters between two
+  polls, so they are averages over `poll_interval`. A counter that goes
+  backwards (firewall reboot) is skipped for one sample.
+- **Processes:** none.

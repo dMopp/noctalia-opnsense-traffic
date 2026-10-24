@@ -11,7 +11,7 @@ author = "dMopp"
 license = "MIT"
 icon = "router"
 description = "Download and upload rate of an OPNsense interface in the bar, styled like the built-in network widgets."
-tags = ["bar", "panel", "service", "network", "monitoring"]
+tags = ["bar", "panel", "service", "network", "indicator"]
 
 [[setting]]
 key = "url"
@@ -67,6 +67,15 @@ description_key = "settings.line_up_mbit.description"
 default = 0
 min = 0
 max = 100000
+
+[[setting]]
+key = "peak_hold_hours"
+type = "int"
+label_key = "settings.peak_hold_hours.label"
+description_key = "settings.peak_hold_hours.description"
+default = 0
+min = 0
+max = 720
 
 [[setting]]
 key = "highlight_from"

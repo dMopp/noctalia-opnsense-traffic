@@ -8,6 +8,8 @@
 -- key=/secret= file (the format OPNsense offers for download), so it does not
 -- end up in settings.toml or anything mirrored from it.
 
+local peaks = require("./lib/peaks.luau")
+
 local SNAPSHOT_KEY = "opnsense_snapshot"
 local COMMAND_KEY = "opnsense_command"
 local HISTORY = 40
@@ -18,6 +20,8 @@ local lastRun = 0
 local counters = {} -- id -> { rx, tx, t }
 local rates = {} -- id -> { rx, tx }
 local history = { id = "", rx = {}, tx = {}, peakRx = 0, peakTx = 0 }
+
+peaks.load()
 local detected = { id = "", at = 0, error = "" }
 
 local function config(key, fallback)
@@ -185,14 +189,25 @@ local function handleTraffic(response)
 		return
 	end
 	if history.id ~= iface.id then
-		history = { id = iface.id, rx = {}, tx = {}, peakRx = 0, peakTx = 0 }
+		history = { id = iface.id, rx = {}, tx = {} }
 	end
+	local now = os.time()
 	if iface.ready then
 		push(history.rx, iface.rx)
 		push(history.tx, iface.tx)
-		history.peakRx = math.max(history.peakRx, iface.rx)
-		history.peakTx = math.max(history.peakTx, iface.tx)
+		peaks.record(iface.id, iface.rx, iface.tx, now)
+		peaks.save(false)
 	end
+	-- Peaks of the selected interface within the hold time; `since` and the
+	-- *At fields are Unix seconds for the panel.
+	local hold = math.max(tonumber(config("peak_hold_hours", 0)) or 0, 0)
+	local peak = peaks.current(iface.id, hold, now)
+	history.peakRx = peak.rx
+	history.peakRxAt = peak.rxAt
+	history.peakTx = peak.tx
+	history.peakTxAt = peak.txAt
+	history.since = peak.since
+	history.hold = hold
 	publish({
 		error = "",
 		interfaces = interfaces,
@@ -237,10 +252,22 @@ local function poll()
 	end
 end
 
+local function resetPeaks()
+	if history.id ~= "" then
+		peaks.reset(history.id, os.time())
+	end
+	poll()
+end
+
 noctalia.state.watch(COMMAND_KEY, function(cmd)
-	if type(cmd) == "table" and cmd.action == "refresh" then
+	if type(cmd) ~= "table" then
+		return
+	end
+	if cmd.action == "refresh" then
 		detected.at = 0
 		poll()
+	elseif cmd.action == "reset_peaks" then
+		resetPeaks()
 	end
 end)
 
@@ -248,6 +275,8 @@ function onIpc(event, _payload)
 	if event == "refresh" then
 		detected.at = 0
 		poll()
+	elseif event == "reset-peaks" then
+		resetPeaks()
 	end
 end
 

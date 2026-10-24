@@ -16,8 +16,15 @@
   "panel": {
     "copy_hint": "Click to copy \"{id}\" for the interface setting",
     "download": "Download",
+    "hold_hours": {
+      "one": "Peaks are kept for {count} hour",
+      "other": "Peaks are kept for {count} hours"
+    },
+    "hold_unlimited": "Peaks are kept until reset",
     "interfaces": "Interfaces",
     "of_line": "line {line}",
+    "peak": "Peak {peak} at {at} · measured since {since}",
+    "reset_peaks": "Reset peaks",
     "title": "OPNsense Traffic",
     "upload": "Upload"
   },
@@ -74,6 +81,10 @@
     "line_up_mbit": {
       "description": "Your line's bandwidth in Mbit/s, for example from your provider contract. Scales gauge and graph and turns on the highlight. 0 scales to the highest rate seen and never highlights.",
       "label": "Line speed up (Mbit/s)"
+    },
+    "peak_hold_hours": {
+      "label": "Keep peaks (hours)",
+      "description": "How long a measured peak counts for the adaptive scale (no line speed set). 0 keeps it until you reset it in the panel. Stored on disk, survives restarts. Does not add API requests."
     },
     "poll_interval": {
       "description": "Seconds between two API requests.",
