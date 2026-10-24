@@ -1,0 +1,117 @@
+{
+  "errors": {
+    "bad_credentials": "{path} enthält keine key=/secret=-Zeilen",
+    "bad_response": "Unerwartete Antwort der OPNsense-API",
+    "detecting": "WAN-Interface wird ermittelt …",
+    "forbidden": "Dem API-User fehlt das Recht „{privilege}“",
+    "http": "OPNsense-API antwortet mit HTTP {status}",
+    "no_credentials": "API-Key-Datei nicht gefunden: {path}",
+    "no_default_route": "Kein Interface mit Default-Route gefunden",
+    "no_interface": "Kein Interface gesetzt (eintragen oder Auto-Erkennung einschalten)",
+    "no_url": "Keine OPNsense-URL gesetzt",
+    "unauthorized": "API-Key abgelehnt (HTTP 401)",
+    "unknown_interface": "Interface „{name}“ gibt es auf der OPNsense nicht",
+    "unreachable": "OPNsense unter {url} nicht erreichbar"
+  },
+  "panel": {
+    "copy_hint": "Klicken kopiert „{id}“ für die Interface-Einstellung",
+    "download": "Download",
+    "interfaces": "Interfaces",
+    "of_line": "Leitung {line}",
+    "title": "OPNsense-Traffic",
+    "upload": "Upload"
+  },
+  "settings": {
+    "allow_insecure_tls": {
+      "description": "Zertifikat nicht prüfen. Nur für ein selbstsigniertes Zertifikat, das sich nicht ersetzen lässt.",
+      "label": "Unsicheres Zertifikat erlauben"
+    },
+    "auto_detect": {
+      "description": "Ist kein Interface gesetzt, das mit der Default-Route nehmen. Braucht das Recht „Status: Interfaces“.",
+      "label": "WAN automatisch erkennen"
+    },
+    "credentials_file": {
+      "description": "Datei mit Zeilen key=… und secret=…, so wie OPNsense sie herunterlädt. Rechte 600.",
+      "label": "API-Key-Datei"
+    },
+    "direction": {
+      "download": "Download",
+      "label": "Richtung",
+      "upload": "Upload"
+    },
+    "glyph": {
+      "description": "Leer: Download- bzw. Upload-Symbol.",
+      "label": "Symbol"
+    },
+    "glyph_position": {
+      "after": "Danach",
+      "before": "Davor",
+      "label": "Symbolposition"
+    },
+    "highlight_color": {
+      "description": "Der Wert geht zwischen den beiden Hervorhebungsschwellen in diese Farbe über (braucht eine Leitungsgeschwindigkeit).",
+      "label": "Hervorhebungsfarbe"
+    },
+    "highlight_from": {
+      "label": "Hervorheben ab (% der Leitung)",
+      "description": "Unterhalb dieses Anteils der Leitung bleibt der Wert in der Leistenfarbe."
+    },
+    "highlight_full": {
+      "label": "Voll hervorgehoben ab (% der Leitung)",
+      "description": "Ab diesem Anteil der Leitung hat der Wert die volle Hervorhebungsfarbe."
+    },
+    "interface": {
+      "description": "Kennung (opt1), Name (WAN) oder Gerät (pppoe0). Das Panel listet alle auf.",
+      "label": "Interface"
+    },
+    "label_min_width": {
+      "label": "Mindestbreite des Werts"
+    },
+    "line_down_mbit": {
+      "description": "Bandbreite deiner Leitung in Mbit/s, z. B. laut Vertrag. Skaliert Gauge und Graph und schaltet die Hervorhebung ein. 0 skaliert auf die höchste gesehene Rate und hebt nie hervor.",
+      "label": "Leitung Download (Mbit/s)"
+    },
+    "line_up_mbit": {
+      "description": "Bandbreite deiner Leitung in Mbit/s, z. B. laut Vertrag. Skaliert Gauge und Graph und schaltet die Hervorhebung ein. 0 skaliert auf die höchste gesehene Rate und hebt nie hervor.",
+      "label": "Leitung Upload (Mbit/s)"
+    },
+    "poll_interval": {
+      "description": "Sekunden zwischen zwei API-Abfragen.",
+      "label": "Aktualisierung (s)"
+    },
+    "show_glyph": {
+      "label": "Symbol anzeigen"
+    },
+    "show_units": {
+      "label": "Einheiten anzeigen"
+    },
+    "show_value": {
+      "label": "Wert anzeigen"
+    },
+    "speed_compact": {
+      "description": "1.2M statt 1.2 MB/s",
+      "label": "Kompakt"
+    },
+    "speed_unit": {
+      "auto": "Automatisch",
+      "kb": "Kilobyte",
+      "label": "Einheit",
+      "mb": "Megabyte"
+    },
+    "url": {
+      "description": "Basis-URL der Weboberfläche, z. B. https://opnsense.lan:443",
+      "label": "OPNsense-URL"
+    },
+    "visualization": {
+      "gauge": "Balken",
+      "graph": "Graph",
+      "label": "Darstellung",
+      "none": "Keine"
+    }
+  },
+  "tooltip": {
+    "download": "Download",
+    "interface": "Interface",
+    "upload": "Upload"
+  }
+}
