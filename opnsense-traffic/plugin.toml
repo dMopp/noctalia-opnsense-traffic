@@ -12,6 +12,7 @@ license = "MIT"
 icon = "router"
 description = "Download and upload rate of an OPNsense interface in the bar, styled like the built-in network widgets."
 tags = ["bar", "panel", "service", "network", "indicator"]
+dependencies = ["curl"]
 
 [[setting]]
 key = "url"

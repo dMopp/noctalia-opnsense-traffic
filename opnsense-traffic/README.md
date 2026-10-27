@@ -15,6 +15,9 @@ network pulls through the firewall, not just the local machine.
 ## Requirements
 
 - An OPNsense firewall reachable over HTTPS from this machine.
+- `curl`, `sh` and `sed` on `PATH` for the reconnect fallback after a suspend
+  (see Notes). Without `curl` the widget still works, it just shows `--` for up
+  to ~15 minutes after waking up.
 - An API key for a user with the privilege **Reporting: Traffic**, plus
   **Status: Interfaces** (recommended: auto-detect and WAN recognition). Do not
   use an admin key.
@@ -150,9 +153,9 @@ noctalia msg plugin dmopp/opnsense-traffic:service all unhide opt5    # show it 
   `GET <url>/api/interfaces/overview/interfaces_info` every 10 minutes to find
   the default route (auto-detect, WAN side). Without the **Status: Interfaces**
   privilege the second call fails quietly unless auto-detect needs it. HTTP
-  basic auth with the API key, through Noctalia's HTTP client (no `curl`
-  process, the key never shows up in a command line). Nothing else is
-  contacted.
+  basic auth with the API key, normally through Noctalia's HTTP client, for a
+  while after a suspend through `curl` (see below). The key never shows up in
+  a command line. Nothing else is contacted.
 - **Files read:** `credentials_file`. The key is never stored in the Noctalia
   settings, so it does not end up in `settings.toml` or in any export of it.
 - **Files written:** `peaks.json` in the plugin data directory
@@ -165,4 +168,12 @@ noctalia msg plugin dmopp/opnsense-traffic:service all unhide opt5    # show it 
 - **Rates** are the difference of the interface byte counters between two
   polls, so they are averages over `poll_interval`. A counter that goes
   backwards (firewall reboot) is skipped for one sample.
-- **Processes:** none.
+- **Processes / reconnect fallback:** Noctalia's HTTP client reuses one
+  HTTP/2 connection per host. After a suspend that connection is dead, and the
+  client keeps sending requests over it until the kernel drops the socket
+  (`tcp_retries2`, about 15 minutes); plugins cannot request a fresh
+  connection. So after a suspend (detected as a gap in the service tick) or a
+  request timeout, the plugin polls for 20 minutes through
+  `sh -c '… | curl -K - …'` instead, then switches back. The shell reads key and
+  secret from `credentials_file` and passes them to curl on stdin, so they
+  never appear in a command line. No other process is started.

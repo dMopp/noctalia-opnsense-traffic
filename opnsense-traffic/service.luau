@@ -109,14 +109,64 @@ local function readCredentials()
 	return { key = key, secret = secret }
 end
 
+-- Noctalia's HTTP client keeps one HTTP/2 connection per host and reuses it.
+-- After a suspend that connection is dead, and a timeout only ends the stream,
+-- not the connection: every request hangs for 30 s until the kernel gives the
+-- socket up (tcp_retries2, about 15 minutes). Plugins cannot ask for a fresh
+-- connection, so for a while after a suspend or a timeout the requests go
+-- through a curl process instead, which always connects anew.
+local FALLBACK_MS = 20 * 60 * 1000
+local SLEEP_GAP_S = 15
+local fallbackUntil = 0
+local lastTickSec = os.time()
+
+local function useFallback()
+	return noctalia.nowMs() < fallbackUntil and noctalia.commandExists("curl")
+end
+
+local function startFallback()
+	fallbackUntil = noctalia.nowMs() + FALLBACK_MS
+end
+
+-- The key never reaches a command line: the shell reads it from the key file
+-- and hands it to curl as a config on stdin (printf is a shell builtin).
+local CURL_SCRIPT = [[
+k=$(sed -n 's/^key=//p' "$1"); s=$(sed -n 's/^secret=//p' "$1")
+printf 'user = "%s:%s"\n' "$k" "$s" | curl -sS -K - ${3:+-k} --max-time 10 -H 'Accept: application/json' -w '\n%{http_code}' "$2"
+]]
+
+local function curlRequest(path, cb)
+	local keyFile = noctalia.expandPath(tostring(config("credentials_file", "")))
+	local insecure = config("allow_insecure_tls", false) == true and "1" or ""
+	local args = { "sh", "-c", CURL_SCRIPT, "sh", keyFile, baseUrl() .. "/api/" .. path, insecure }
+	return noctalia.runAsync(args, function(result)
+		local out = result.stdout or ""
+		local body, status = out:match("^(.*)\n(%d+)%s*$")
+		if result.exitCode ~= 0 or status == nil then
+			cb({ ok = false, status = 0, body = "" })
+			return
+		end
+		cb({ ok = true, status = tonumber(status), body = body })
+	end, 15000)
+end
+
 local function request(creds, path, cb)
+	if useFallback() then
+		return curlRequest(path, cb)
+	end
 	return noctalia.http({
 		url = baseUrl() .. "/api/" .. path,
 		headers = { "Accept: application/json" },
 		basic_username = creds.key,
 		basic_password = creds.secret,
 		allow_insecure_tls = config("allow_insecure_tls", false) == true,
-	}, cb)
+	}, function(response)
+		if not response.ok or (response.status or 0) == 0 then
+			-- Likely the dead connection described above.
+			startFallback()
+		end
+		cb(response)
+	end)
 end
 
 -- Turns a failed response into a message; nil when the response is usable.
@@ -355,9 +405,14 @@ local function poll()
 		detect(creds)
 	end
 	running = true
+	local viaFallback = useFallback()
 	local accepted = request(creds, "diagnostics/traffic/interface", function(response)
 		running = false
 		handleTraffic(response)
+		-- A native timeout just switched to curl: retry now instead of waiting.
+		if not viaFallback and useFallback() and (response.status or 0) == 0 then
+			poll()
+		end
 	end)
 	if not accepted then
 		running = false
@@ -408,6 +463,15 @@ end
 noctalia.setUpdateInterval(250)
 
 function update()
+	-- The tick stops while the machine sleeps; a gap in wall-clock time means
+	-- it just woke up, so skip the dead connection right away.
+	local nowSec = os.time()
+	if nowSec - lastTickSec > SLEEP_GAP_S then
+		startFallback()
+		counters = {}
+		lastRun = 0
+	end
+	lastTickSec = nowSec
 	local interval = math.max(tonumber(config("poll_interval", 2)) or 2, 1) * 1000
 	if noctalia.nowMs() - lastRun >= interval then
 		poll()
