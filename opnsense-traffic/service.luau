@@ -295,7 +295,11 @@ local function handleTraffic(response)
 	local iface, resolveErr = resolve(all)
 	local selectedId = iface ~= nil and iface.id or ""
 
-	local now = noctalia.nowMs()
+	-- Rates use the firewall's own timestamp of the counters: the local
+	-- nowMs() clock stops during suspend and response latency varies, both of
+	-- which made the byte delta look like a burst. Wall clock as a fallback.
+	local now = tonumber(data.time) or os.time()
+	local maxGap = math.max(tonumber(config("poll_interval", 2)) or 2, 1) * 5
 	local interfaces = {}
 	local hidden = {}
 	for _, base in ipairs(all) do
@@ -311,10 +315,14 @@ local function handleTraffic(response)
 		elseif rx ~= nil and tx ~= nil then
 			local prev = counters[id]
 			if prev ~= nil and now > prev.t then
-				local dt = (now - prev.t) / 1000
-				-- A counter that went backwards was reset (reboot, interface reattach): skip one sample.
-				if rx >= prev.rx and tx >= prev.tx then
+				local dt = now - prev.t
+				-- Skip a sample whose counters went backwards (firewall reboot,
+				-- interface reattach) or lie too far apart (missed polls): an
+				-- average over such a gap is no current rate.
+				if rx >= prev.rx and tx >= prev.tx and dt <= maxGap then
 					rates[id] = { rx = (rx - prev.rx) / dt, tx = (tx - prev.tx) / dt }
+				else
+					rates[id] = nil
 				end
 			end
 			counters[id] = { rx = rx, tx = tx, t = now }
