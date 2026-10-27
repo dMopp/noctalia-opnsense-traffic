@@ -16,7 +16,4 @@ noctalia msg plugins source add opnsense-traffic-local path ~/coding-projects/no
 noctalia msg plugins enable dmopp/opnsense-traffic
 ```
 
-Still missing for the submission: `opnsense-traffic/thumbnail.webp` (960×540, from the
-[thumbnail generator](https://assets.noctalia.dev/plugins/thumbnail-generator.html)).
-
 Written with help from Claude Code.
