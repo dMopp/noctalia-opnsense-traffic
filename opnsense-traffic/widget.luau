@@ -210,7 +210,7 @@ local function render()
 
 	local identity = nil
 	if config("show_glyph", true) ~= false then
-		local name = tostring(config("glyph", ""))
+		local name = tostring(config(isUpload() and "upload_glyph" or "download_glyph", ""))
 		if name == "" then
 			name = isUpload() and "upload" or "download"
 		end

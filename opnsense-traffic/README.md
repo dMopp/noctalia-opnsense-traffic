@@ -133,7 +133,8 @@ Widget settings (per bar widget, matching the built-in network widgets):
 | `visualization` | `select` | `gauge` | `gauge`, `graph` (last 40 samples) or `none`; graph falls back to gauge on a vertical bar |
 | `show_value` / `show_units` | `bool` | `true` | Show the value, with or without its unit |
 | `label_min_width` | `int` | `0` | Minimum width of the value, keeps the widget from jumping |
-| `show_glyph` / `glyph` | `bool` / `glyph` | `true` / `""` | Glyph; empty uses `download` or `upload` |
+| `show_glyph` | `bool` | `true` | Show the glyph |
+| `download_glyph` / `upload_glyph` | `glyph` | `download` / `upload` | Glyph for the widget's direction (only the matching one is shown in settings) |
 | `glyph_position` | `select` | `before` | `before` or `after` the value |
 | `highlight_color` | `color` | `error` | Color the value fades to near the line speed |
 

@@ -194,12 +194,18 @@ entry = "widget.luau"
   default = true
 
   [[widget.setting]]
-  key = "glyph"
+  key = "download_glyph"
   type = "glyph"
-  label_key = "settings.glyph.label"
-  description_key = "settings.glyph.description"
-  default = ""
-  visible_when = { key = "show_glyph", values = ["true"] }
+  label_key = "settings.download_glyph.label"
+  default = "download"
+  visible_when = { key = "direction", values = ["download"] }
+
+  [[widget.setting]]
+  key = "upload_glyph"
+  type = "glyph"
+  label_key = "settings.upload_glyph.label"
+  default = "upload"
+  visible_when = { key = "direction", values = ["upload"] }
 
   [[widget.setting]]
   key = "glyph_position"

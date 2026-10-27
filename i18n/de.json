@@ -53,9 +53,8 @@
       "label": "Richtung",
       "upload": "Upload"
     },
-    "glyph": {
-      "description": "Leer: Download- bzw. Upload-Symbol.",
-      "label": "Symbol"
+    "download_glyph": {
+      "label": "Download-Symbol"
     },
     "glyph_position": {
       "after": "Danach",
@@ -119,6 +118,9 @@
       "kb": "Kilobyte",
       "label": "Einheit",
       "mb": "Megabyte"
+    },
+    "upload_glyph": {
+      "label": "Upload-Symbol"
     },
     "url": {
       "description": "Basis-URL der Weboberfläche, z. B. https://opnsense.lan:443",

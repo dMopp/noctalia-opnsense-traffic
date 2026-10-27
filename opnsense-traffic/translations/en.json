@@ -53,9 +53,8 @@
       "label": "Direction",
       "upload": "Upload"
     },
-    "glyph": {
-      "description": "Empty uses download or upload.",
-      "label": "Glyph"
+    "download_glyph": {
+      "label": "Download glyph"
     },
     "glyph_position": {
       "after": "After",
@@ -119,6 +118,9 @@
       "kb": "Kilobytes",
       "label": "Unit",
       "mb": "Megabytes"
+    },
+    "upload_glyph": {
+      "label": "Upload glyph"
     },
     "url": {
       "description": "Base URL of the web GUI, e.g. https://opnsense.lan:443",
