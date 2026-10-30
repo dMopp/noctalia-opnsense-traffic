@@ -16,4 +16,10 @@ noctalia msg plugins source add opnsense-traffic-local path ~/coding-projects/no
 noctalia msg plugins enable dmopp/opnsense-traffic
 ```
 
+Tests (not part of the plugin directory):
+
+```sh
+nix shell nixpkgs#luau -c sh tests/run.sh
+```
+
 Written with help from Claude Code.
