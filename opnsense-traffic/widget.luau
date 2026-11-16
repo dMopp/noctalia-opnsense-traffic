@@ -238,28 +238,23 @@ local function tooltip()
 	if snapshot.selectedDevice ~= nil and snapshot.selectedDevice ~= "" then
 		name = name .. " (" .. snapshot.selectedDevice .. ")"
 	end
-	local rows = {
-		{ key = noctalia.tr("tooltip.interface"), value = name },
-		{ key = noctalia.tr("tooltip.download"), value = format.rate(snapshot.rx, unit, false) },
-		{ key = noctalia.tr("tooltip.upload"), value = format.rate(snapshot.tx, unit, false) },
-	}
+	-- One block per source: its name in the first row, the directions marked
+	-- with arrows like the bar glyphs. The tooltip has no headings or
+	-- separators, so short blocks are what keeps it readable.
+	local rows = {}
+	local function block(label, rx, tx)
+		table.insert(rows, { key = label, value = "↓ " .. format.rate(tonumber(rx) or 0, unit, false) })
+		table.insert(rows, { key = "", value = "↑ " .. format.rate(tonumber(tx) or 0, unit, false) })
+	end
+	block(name, snapshot.rx, snapshot.tx)
 	local rates = localRates()
 	if rates ~= nil then
-		-- Same layout as the firewall block above: interface, then both directions.
 		local pcName = noctalia.tr("tooltip.this_pc")
 		local localName = noctalia.string.trim(tostring(config("local_interface", "")))
 		if localName ~= "" then
 			pcName = pcName .. " (" .. localName .. ")"
 		end
-		table.insert(rows, { key = noctalia.tr("tooltip.interface"), value = pcName })
-		table.insert(rows, {
-			key = noctalia.tr("tooltip.download"),
-			value = format.rate(tonumber(rates.rxBytesPerSec) or 0, unit, false),
-		})
-		table.insert(rows, {
-			key = noctalia.tr("tooltip.upload"),
-			value = format.rate(tonumber(rates.txBytesPerSec) or 0, unit, false),
-		})
+		block(pcName, rates.rxBytesPerSec, rates.txBytesPerSec)
 	end
 	return rows
 end

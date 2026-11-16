@@ -362,7 +362,7 @@ check("local off by default", texts(shown), "1.0 kB/s")
 settings.show_local = true
 watchers["opnsense_snapshot"](good)
 check("local total", texts(shown), "1.0 kB/s (2.0 kB/s)")
-check("local tooltip", tip[#tip - 2].value .. " " .. tip[#tip - 1].key .. " " .. tip[#tip].key .. " " .. tip[#tip].value, "tooltip.this_pc tooltip.download tooltip.upload 3.0 kB/s")
+check("local tooltip", tip[#tip - 1].key .. " | " .. tip[#tip - 1].value .. " | " .. tip[#tip].value, "tooltip.this_pc | ↓ 2.0 kB/s | ↑ 3.0 kB/s")
 settings.local_interface = "enp6s0"
 watchers["opnsense_snapshot"](good)
 check("local interface", texts(shown), "1.0 kB/s (500 B/s)")

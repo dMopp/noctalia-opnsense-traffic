@@ -133,7 +133,7 @@ Widget settings (per bar widget, matching the built-in network widgets):
 | `direction` | `select` | `download` | `download` or `upload` |
 | `speed_unit` | `select` | `auto` | `auto`, `kb` or `mb` (decimal, 1 kB = 1000 B) |
 | `speed_compact` | `bool` | `false` | `1.2M` instead of `1.2 MB/s` |
-| `show_local` | `bool` | `false` | Also show this PC's own rate in parentheses, e.g. `4.9M (1.2M)`, in the same unit and style; on a vertical bar it goes on a second line. The tooltip then shows a second block for this PC, laid out like the firewall block (interface, download, upload). |
+| `show_local` | `bool` | `false` | Also show this PC's own rate in parentheses, e.g. `4.9M (1.2M)`, in the same unit and style; on a vertical bar it goes on a second line. The tooltip then shows a second block for this PC, laid out like the firewall block (name, then ↓ and ↑). |
 | `local_interface` | `string` | `""` | PC interface for `show_local`, e.g. `enp6s0`. Empty: total of the physical interfaces, like the built-in network widgets. An unknown name shows no value in parentheses. |
 | `visualization` | `select` | `gauge` | `gauge`, `graph` (last 40 samples) or `none`; graph falls back to gauge on a vertical bar |
 | `show_value` / `show_units` | `bool` | `true` | Show the value, with or without its unit |

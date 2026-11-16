@@ -148,9 +148,6 @@
     }
   },
   "tooltip": {
-    "download": "Download",
-    "interface": "Interface",
-    "this_pc": "This PC",
-    "upload": "Upload"
+    "this_pc": "This PC"
   }
 }
