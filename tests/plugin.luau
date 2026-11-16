@@ -347,6 +347,37 @@ good.updatedAt = clockMs
 watchers["opnsense_snapshot"](good)
 check("widget recovers", texts(shown), "1.0 kB/s")
 
+-- This PC's rate in parentheses.
+noctalia.systemStats = function()
+	return {
+		net = {
+			rxBytesPerSec = 2000,
+			txBytesPerSec = 3000,
+			interfaces = { enp6s0 = { rxBytesPerSec = 500, txBytesPerSec = 700 } },
+		},
+	}
+end
+watchers["opnsense_snapshot"](good)
+check("local off by default", texts(shown), "1.0 kB/s")
+settings.show_local = true
+watchers["opnsense_snapshot"](good)
+check("local total", texts(shown), "1.0 kB/s (2.0 kB/s)")
+check("local tooltip", tip[#tip].key, "tooltip.this_pc")
+settings.local_interface = "enp6s0"
+watchers["opnsense_snapshot"](good)
+check("local interface", texts(shown), "1.0 kB/s (500 B/s)")
+settings.local_interface = "wlan9"
+watchers["opnsense_snapshot"](good)
+check("unknown local interface", texts(shown), "1.0 kB/s")
+settings.local_interface = ""
+noctalia.systemStats = function()
+	return nil
+end
+watchers["opnsense_snapshot"](good)
+check("monitor disabled", texts(shown), "1.0 kB/s")
+settings.show_local = nil
+noctalia.systemStats = nil
+
 local panelNode = nil
 panel = {
 	render = function(node)

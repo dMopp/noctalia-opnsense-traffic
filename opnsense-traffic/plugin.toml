@@ -5,7 +5,7 @@
 
 id = "dmopp/opnsense-traffic"
 name = "OPNsense Traffic"
-version = "1.0.1"
+version = "1.1.0"
 plugin_api = 42
 author = "dMopp"
 license = "MIT"
@@ -153,6 +153,21 @@ entry = "widget.luau"
   label_key = "settings.speed_compact.label"
   description_key = "settings.speed_compact.description"
   default = false
+
+  [[widget.setting]]
+  key = "show_local"
+  type = "bool"
+  label_key = "settings.show_local.label"
+  description_key = "settings.show_local.description"
+  default = false
+
+  [[widget.setting]]
+  key = "local_interface"
+  type = "string"
+  label_key = "settings.local_interface.label"
+  description_key = "settings.local_interface.description"
+  default = ""
+  visible_when = { key = "show_local", values = ["true"] }
 
   [[widget.setting]]
   key = "visualization"

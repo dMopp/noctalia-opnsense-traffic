@@ -133,6 +133,8 @@ Widget settings (per bar widget, matching the built-in network widgets):
 | `direction` | `select` | `download` | `download` or `upload` |
 | `speed_unit` | `select` | `auto` | `auto`, `kb` or `mb` (decimal, 1 kB = 1000 B) |
 | `speed_compact` | `bool` | `false` | `1.2M` instead of `1.2 MB/s` |
+| `show_local` | `bool` | `false` | Also show this PC's own rate in parentheses, e.g. `4.9M (1.2M)`, in the same unit and style; on a vertical bar it goes on a second line. The tooltip then adds a "This PC" row with both directions. |
+| `local_interface` | `string` | `""` | PC interface for `show_local`, e.g. `enp6s0`. Empty: total of the physical interfaces, like the built-in network widgets. An unknown name shows no value in parentheses. |
 | `visualization` | `select` | `gauge` | `gauge`, `graph` (last 40 samples) or `none`; graph falls back to gauge on a vertical bar |
 | `show_value` / `show_units` | `bool` | `true` | Show the value, with or without its unit |
 | `label_min_width` | `int` | `0` | Minimum width of the value, keeps the widget from jumping |
@@ -174,6 +176,9 @@ noctalia msg plugin dmopp/opnsense-traffic:service all unhide opt5    # show it 
   interface ids hidden with the eye button. Plugins cannot change their own
   settings, so the panel keeps its own list next to `hidden_interfaces`. Both
   files are written to `<name>.tmp` first and then renamed over the old one.
+- **This PC's rate** (`show_local`) comes from Noctalia's own system monitor
+  (`noctalia.systemStats()`); no extra request, file or process. It follows the
+  monitor's poll interval and is missing while `[system.monitor]` is disabled.
 - **Rates** are the difference of the interface byte counters between two
   polls, so they are averages over `poll_interval`. A counter that goes
   backwards (firewall reboot) is skipped for one sample. A manual refresh less

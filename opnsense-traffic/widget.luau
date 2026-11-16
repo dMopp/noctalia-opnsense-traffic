@@ -189,15 +189,43 @@ local function graph(color, vertical)
 	})
 end
 
-local function valueText(value)
-	if currentError() ~= "" then
-		return "--"
-	end
+local function formatRate(value)
 	local text = format.rate(value, config("speed_unit", "auto"), config("speed_compact", false) == true)
 	if config("show_units", true) == false then
 		text = format.stripUnit(text)
 	end
 	return text
+end
+
+local function valueText(value)
+	if currentError() ~= "" then
+		return "--"
+	end
+	return formatRate(value)
+end
+
+-- This PC's own rate from Noctalia's system monitor, for the value in
+-- parentheses: the total over physical interfaces like the built-in widget, or
+-- one interface by name. nil when turned off, the monitor is disabled or the
+-- interface is unknown.
+local function localRates()
+	if config("show_local", false) ~= true or noctalia.systemStats == nil then
+		return nil
+	end
+	local stats = noctalia.systemStats()
+	if type(stats) ~= "table" or type(stats.net) ~= "table" then
+		return nil
+	end
+	local name = noctalia.string.trim(tostring(config("local_interface", "")))
+	if name == "" then
+		return stats.net
+	end
+	local interfaces = stats.net.interfaces
+	return type(interfaces) == "table" and interfaces[name] or nil
+end
+
+local function localValue(rates)
+	return tonumber(isUpload() and rates.txBytesPerSec or rates.rxBytesPerSec) or 0
 end
 
 local function tooltip()
@@ -210,11 +238,18 @@ local function tooltip()
 	if snapshot.selectedDevice ~= nil and snapshot.selectedDevice ~= "" then
 		name = name .. " (" .. snapshot.selectedDevice .. ")"
 	end
-	return {
+	local rows = {
 		{ key = noctalia.tr("tooltip.interface"), value = name },
 		{ key = noctalia.tr("tooltip.download"), value = format.rate(snapshot.rx, unit, false) },
 		{ key = noctalia.tr("tooltip.upload"), value = format.rate(snapshot.tx, unit, false) },
 	}
+	local rates = localRates()
+	if rates ~= nil then
+		local down = format.rate(tonumber(rates.rxBytesPerSec) or 0, unit, false)
+		local up = format.rate(tonumber(rates.txBytesPerSec) or 0, unit, false)
+		table.insert(rows, { key = noctalia.tr("tooltip.this_pc"), value = "↓ " .. down .. " · ↑ " .. up })
+	end
+	return rows
 end
 
 local shownStale = false
@@ -248,13 +283,25 @@ local function render()
 
 	local label = nil
 	if config("show_value", true) ~= false then
-		local props = { text = valueText(value), color = color, textAlign = vertical and "center" or "end" }
+		local text = valueText(value)
+		local rates = localRates()
+		local localText = rates ~= nil and "(" .. formatRate(localValue(rates)) .. ")" or nil
+		if localText ~= nil and not vertical then
+			text = text .. " " .. localText
+		end
+		local props = { text = text, color = color, textAlign = vertical and "center" or "end" }
 		if vertical then
 			props.fontSize = 13
 		end
 		local minWidth = tonumber(config("label_min_width", 0)) or 0
 		if minWidth > 0 and not vertical then
 			label = ui.row({ minWidth = minWidth, justify = "end", align = "center" }, { ui.label(props) })
+		elseif localText ~= nil and vertical then
+			-- A side bar is too narrow for both values on one line.
+			label = ui.column({ gap = 0, align = "center" }, {
+				ui.label(props),
+				ui.label({ text = localText, color = color, textAlign = "center", fontSize = 11 }),
+			})
 		else
 			label = ui.label(props)
 		end

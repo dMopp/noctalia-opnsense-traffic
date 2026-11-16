@@ -94,6 +94,10 @@
       "description": "Bandbreite deiner Leitung in Mbit/s, z. B. laut Vertrag. Skaliert Gauge und Graph und schaltet die Hervorhebung ein. 0 skaliert auf die höchste gesehene Rate und hebt nie hervor.",
       "label": "Leitung Upload (Mbit/s)"
     },
+    "local_interface": {
+      "label": "Interface des PCs",
+      "description": "Netzwerk-Interface dieses PCs, z. B. enp6s0. Leer: Summe aller physischen Interfaces, wie beim eingebauten Netzwerk-Widget."
+    },
     "peak_hold_hours": {
       "label": "Spitzen merken (Stunden)",
       "description": "Wie lange eine gemessene Spitze für die adaptive Skala zählt (ohne Leitungsgeschwindigkeit). 0 = bis zum Zurücksetzen im Panel. Wird gespeichert und übersteht Neustarts. Erzeugt keine zusätzlichen API-Abfragen."
@@ -104,6 +108,10 @@
     },
     "show_glyph": {
       "label": "Symbol anzeigen"
+    },
+    "show_local": {
+      "label": "Rate dieses PCs anzeigen",
+      "description": "Zeigt die eigene Rate dieses Rechners in Klammern daneben, z. B. 4.9M (1.2M), aus Noctalias Systemmonitor."
     },
     "show_units": {
       "label": "Einheiten anzeigen"
@@ -142,6 +150,7 @@
   "tooltip": {
     "download": "Download",
     "interface": "Interface",
+    "this_pc": "Dieser PC",
     "upload": "Upload"
   }
 }
