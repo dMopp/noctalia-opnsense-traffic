@@ -245,9 +245,21 @@ local function tooltip()
 	}
 	local rates = localRates()
 	if rates ~= nil then
-		local down = format.rate(tonumber(rates.rxBytesPerSec) or 0, unit, false)
-		local up = format.rate(tonumber(rates.txBytesPerSec) or 0, unit, false)
-		table.insert(rows, { key = noctalia.tr("tooltip.this_pc"), value = "↓ " .. down .. " · ↑ " .. up })
+		-- Same layout as the firewall block above: interface, then both directions.
+		local pcName = noctalia.tr("tooltip.this_pc")
+		local localName = noctalia.string.trim(tostring(config("local_interface", "")))
+		if localName ~= "" then
+			pcName = pcName .. " (" .. localName .. ")"
+		end
+		table.insert(rows, { key = noctalia.tr("tooltip.interface"), value = pcName })
+		table.insert(rows, {
+			key = noctalia.tr("tooltip.download"),
+			value = format.rate(tonumber(rates.rxBytesPerSec) or 0, unit, false),
+		})
+		table.insert(rows, {
+			key = noctalia.tr("tooltip.upload"),
+			value = format.rate(tonumber(rates.txBytesPerSec) or 0, unit, false),
+		})
 	end
 	return rows
 end
