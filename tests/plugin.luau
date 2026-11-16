@@ -273,6 +273,37 @@ tick(2)
 check("http refused", published.error, "errors.insecure_url")
 check("no request over http", #httpQueue + #spawned, before)
 
+-- This PC: sampled from the system monitor on every poll, even while the
+-- firewall side fails; one stored peak per source.
+local pcSample = { sampledAtMs = 1, net = { rxBytesPerSec = 2000, txBytesPerSec = 300, interfaces = { enp6s0 = { rxBytesPerSec = 500, txBytesPerSec = 70 } } } }
+noctalia.systemStats = function()
+	return pcSample
+end
+tick(2)
+check("pc off by default", published.pc, nil)
+settings.show_local = true
+tick(2)
+check("pc total rate", published.pc.rx, 2000)
+check("pc id", published.pc.id, "pc:total")
+check("pc peak", published.pc.peakRx, 2000)
+check("pc history", #published.pc.rxHistory, 1)
+tick(2)
+check("same monitor sample counted once", #published.pc.rxHistory, 1)
+pcSample = { sampledAtMs = 2, net = { rxBytesPerSec = 800, txBytesPerSec = 100, interfaces = pcSample.net.interfaces } }
+tick(2)
+check("pc new rate", published.pc.rx, 800)
+check("pc peak kept", published.pc.peakRx, 2000)
+settings.local_interface = "enp6s0"
+tick(2)
+check("pc interface", published.pc.rx, 500)
+check("pc interface id", published.pc.id, "pc:enp6s0")
+settings.local_interface = "wlan9"
+tick(2)
+check("pc unknown interface", published.pc, nil)
+settings.local_interface = nil
+settings.show_local = nil
+noctalia.systemStats = nil
+
 -- Widget and panel: a dead service must not leave an old rate on screen -------
 
 local good = {
@@ -347,36 +378,34 @@ good.updatedAt = clockMs
 watchers["opnsense_snapshot"](good)
 check("widget recovers", texts(shown), "1.0 kB/s")
 
--- This PC's rate in parentheses.
-noctalia.systemStats = function()
-	return {
-		net = {
-			rxBytesPerSec = 2000,
-			txBytesPerSec = 3000,
-			interfaces = { enp6s0 = { rxBytesPerSec = 500, txBytesPerSec = 700 } },
-		},
-	}
-end
+-- This PC in parentheses, from the service's snapshot.
+good.pc = { id = "pc:total", name = "", rx = 2000, tx = 3000, rxHistory = {}, txHistory = {}, peakRx = 4000, peakTx = 3000 }
 watchers["opnsense_snapshot"](good)
 check("local off by default", texts(shown), "1.0 kB/s")
 settings.show_local = true
 watchers["opnsense_snapshot"](good)
-check("local total", texts(shown), "1.0 kB/s (2.0 kB/s)")
-check("local tooltip", tip[#tip - 1].key .. " | " .. tip[#tip - 1].value .. " | " .. tip[#tip].value, "tooltip.this_pc | ↓ 2.0 kB/s | ↑ 3.0 kB/s")
-settings.local_interface = "enp6s0"
-watchers["opnsense_snapshot"](good)
-check("local interface", texts(shown), "1.0 kB/s (500 B/s)")
-settings.local_interface = "wlan9"
-watchers["opnsense_snapshot"](good)
-check("unknown local interface", texts(shown), "1.0 kB/s")
-settings.local_interface = ""
-noctalia.systemStats = function()
-	return nil
+check("local value in parentheses", texts(shown), "1.0 kB/s ( 2.0 kB/s )")
+local function findKind(node, kind, out)
+	out = out or {}
+	if type(node) == "table" then
+		if node.kind == kind then
+			table.insert(out, node)
+		end
+		for _, kid in ipairs(node.kids or {}) do
+			findKind(kid, kind, out)
+		end
+	end
+	return out
 end
+check("local gets its own gauge", #findKind(shown, "column"), 2)
+check("local tooltip", tip[#tip - 1].key .. " | " .. tip[#tip - 1].value .. " | " .. tip[#tip].value, "tooltip.this_pc | ↓ 2.0 kB/s | ↑ 3.0 kB/s")
+good.pc.name = "enp6s0"
 watchers["opnsense_snapshot"](good)
-check("monitor disabled", texts(shown), "1.0 kB/s")
+check("local tooltip names the interface", tip[#tip - 1].key, "tooltip.this_pc (enp6s0)")
+good.pc = nil
+watchers["opnsense_snapshot"](good)
+check("no pc in snapshot", texts(shown), "1.0 kB/s")
 settings.show_local = nil
-noctalia.systemStats = nil
 
 local panelNode = nil
 panel = {

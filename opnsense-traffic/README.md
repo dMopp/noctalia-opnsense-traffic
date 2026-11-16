@@ -122,6 +122,8 @@ Plugin settings (shared by all widgets):
 | `auto_detect` | `bool` | `false` | Only while `interface` is empty: use the interface that carries the default route. Re-checked every 10 minutes. Needs **Status: Interfaces**. |
 | `poll_interval` | `int` | `2` | Seconds between two API requests (1-60). This is the only thing that sets the API load. |
 | `line_down_mbit` / `line_up_mbit` | `int` | `0` | Bandwidth of your line in Mbit/s. Scales gauge and graph and enables the highlight. `0` = adaptive: scale to the measured peak. |
+| `show_local` | `bool` | `false` | Also show this PC's own rate in parentheses next to the firewall value, drawn the same way (gauge or graph, then the value), e.g. `6.9M (9.6k)`. Its gauge and graph scale to the PC's own peak, kept like the firewall peaks. The tooltip and the panel get a "This PC" block. On a vertical bar it goes below the firewall value. |
+| `local_interface` | `string` | `""` | PC interface for `show_local`, e.g. `enp6s0`. Empty: total of the physical interfaces, like the built-in network widgets. An unknown name shows nothing in parentheses. |
 | `peak_hold_hours` | `int` | `0` | Adaptive scale only: how long a peak counts, in hours (up to 720). `0` keeps it until **Reset peaks**. |
 | `highlight_from` / `highlight_full` | `int` | `50` / `90` | Percent of the line speed where the value starts fading to the highlight color and where it reaches it. Needs a line speed. |
 | `allow_insecure_tls` | `bool` | `false` | Advanced. Skip certificate checks. Anyone who can intercept the traffic then gets the API key, so prefer adding the firewall's CA to the system trust store (see Notes). |
@@ -133,8 +135,6 @@ Widget settings (per bar widget, matching the built-in network widgets):
 | `direction` | `select` | `download` | `download` or `upload` |
 | `speed_unit` | `select` | `auto` | `auto`, `kb` or `mb` (decimal, 1 kB = 1000 B) |
 | `speed_compact` | `bool` | `false` | `1.2M` instead of `1.2 MB/s` |
-| `show_local` | `bool` | `false` | Also show this PC's own rate in parentheses, e.g. `4.9M (1.2M)`, in the same unit and style; on a vertical bar it goes on a second line. The tooltip then shows a second block for this PC, laid out like the firewall block (name, then ↓ and ↑). |
-| `local_interface` | `string` | `""` | PC interface for `show_local`, e.g. `enp6s0`. Empty: total of the physical interfaces, like the built-in network widgets. An unknown name shows no value in parentheses. |
 | `visualization` | `select` | `gauge` | `gauge`, `graph` (last 40 samples) or `none`; graph falls back to gauge on a vertical bar |
 | `show_value` / `show_units` | `bool` | `true` | Show the value, with or without its unit |
 | `label_min_width` | `int` | `0` | Minimum width of the value, keeps the widget from jumping |
@@ -177,8 +177,10 @@ noctalia msg plugin dmopp/opnsense-traffic:service all unhide opt5    # show it 
   settings, so the panel keeps its own list next to `hidden_interfaces`. Both
   files are written to `<name>.tmp` first and then renamed over the old one.
 - **This PC's rate** (`show_local`) comes from Noctalia's own system monitor
-  (`noctalia.systemStats()`); no extra request, file or process. It follows the
+  (`noctalia.systemStats()`); no extra request or process. It follows the
   monitor's poll interval and is missing while `[system.monitor]` is disabled.
+  Its peaks go into the same `peaks.json` under `pc:total` or `pc:<interface>`,
+  and **Reset peaks** clears them together with the firewall's.
 - **Rates** are the difference of the interface byte counters between two
   polls, so they are averages over `poll_interval`. A counter that goes
   backwards (firewall reboot) is skipped for one sample. A manual refresh less

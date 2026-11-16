@@ -22,6 +22,9 @@ local function sendRefresh()
 end
 
 local function lineBytes(key)
+	if key == nil then
+		return 0
+	end
 	return (tonumber(noctalia.getConfig(key)) or 0) * 125000
 end
 
@@ -160,6 +163,17 @@ local function render()
 		table.insert(body, ui.label({ text = title, fontSize = 12, color = "on_surface_variant" }))
 		table.insert(body, directionRow("download", "panel.download", tonumber(snapshot.rx) or 0, "line_down_mbit", history.peakRx, history.peakRxAt, history.since))
 		table.insert(body, directionRow("upload", "panel.upload", tonumber(snapshot.tx) or 0, "line_up_mbit", history.peakTx, history.peakTxAt, history.since))
+		-- This PC (show_local): same rows, scaled to its own peak, no line speed.
+		local pc = noctalia.getConfig("show_local") == true and type(snapshot.pc) == "table" and snapshot.pc or nil
+		if pc ~= nil then
+			local pcTitle = noctalia.tr("tooltip.this_pc")
+			if pc.name ~= nil and pc.name ~= "" then
+				pcTitle = pcTitle .. " (" .. pc.name .. ")"
+			end
+			table.insert(body, ui.label({ text = pcTitle, fontSize = 12, color = "on_surface_variant" }))
+			table.insert(body, directionRow("download", "panel.download", tonumber(pc.rx) or 0, nil, pc.peakRx, pc.peakRxAt, pc.since))
+			table.insert(body, directionRow("upload", "panel.upload", tonumber(pc.tx) or 0, nil, pc.peakTx, pc.peakTxAt, pc.since))
+		end
 		local hold = tonumber(history.hold) or 0
 		local holdText = hold > 0 and noctalia.trp("panel.hold_hours", hold) or noctalia.tr("panel.hold_unlimited")
 		table.insert(body, ui.row({ align = "center", gap = 8 }, {

@@ -78,6 +78,12 @@ local function hiddenBy(id, name, device)
 end
 
 peaks.load()
+
+-- This PC's own rate from Noctalia's system monitor (show_local), with the
+-- same history and stored peaks as the firewall interface, keyed "pc:total" or
+-- "pc:<interface>". nil while turned off or the source is unavailable.
+local pc = nil
+local pcHistory = { id = "", rx = {}, tx = {}, sampledAt = nil }
 loadHidden()
 -- From /api/interfaces/overview: the first interface with a default route
 -- (auto-detect) and every one that has one (WAN side, see isWanSide).
@@ -194,6 +200,7 @@ end
 
 local function publish(snapshot)
 	snapshot.updatedAt = noctalia.nowMs()
+	snapshot.pc = pc
 	noctalia.state.set(SNAPSHOT_KEY, snapshot)
 end
 
@@ -434,11 +441,64 @@ local function handleTraffic(response)
 	})
 end
 
+local function samplePc()
+	if config("show_local", false) ~= true or noctalia.systemStats == nil then
+		pc = nil
+		return
+	end
+	local stats = noctalia.systemStats()
+	if type(stats) ~= "table" or type(stats.net) ~= "table" then
+		pc = nil
+		return
+	end
+	local name = noctalia.string.trim(tostring(config("local_interface", "")))
+	local rates = stats.net
+	if name ~= "" then
+		rates = type(stats.net.interfaces) == "table" and stats.net.interfaces[name] or nil
+	end
+	local rx = type(rates) == "table" and tonumber(rates.rxBytesPerSec) or nil
+	local tx = type(rates) == "table" and tonumber(rates.txBytesPerSec) or nil
+	if rx == nil or tx == nil then
+		pc = nil
+		return
+	end
+	local id = "pc:" .. (name ~= "" and name or "total")
+	if pcHistory.id ~= id then
+		pcHistory = { id = id, rx = {}, tx = {}, sampledAt = nil }
+	end
+	local nowSec = os.time()
+	-- The monitor samples on its own interval; count each sample once.
+	local sampledAt = tonumber(stats.sampledAtMs)
+	if sampledAt == nil or sampledAt ~= pcHistory.sampledAt then
+		pcHistory.sampledAt = sampledAt
+		push(pcHistory.rx, rx)
+		push(pcHistory.tx, tx)
+		peaks.record(id, rx, tx, nowSec)
+		peaks.save(false)
+	end
+	local hold = math.max(tonumber(config("peak_hold_hours", 0)) or 0, 0)
+	local peak = peaks.current(id, hold, nowSec)
+	pc = {
+		id = id,
+		name = name,
+		rx = rx,
+		tx = tx,
+		rxHistory = pcHistory.rx,
+		txHistory = pcHistory.tx,
+		peakRx = peak.rx,
+		peakRxAt = peak.rxAt,
+		peakTx = peak.tx,
+		peakTxAt = peak.txAt,
+		since = peak.since,
+	}
+end
+
 local function poll()
 	if running then
 		return
 	end
 	lastRun = noctalia.nowMs()
+	samplePc()
 	if baseUrl() == "" then
 		publishError(noctalia.tr("errors.no_url"))
 		return
@@ -484,6 +544,9 @@ end
 local function resetPeaks()
 	if history.id ~= "" then
 		peaks.reset(history.id, os.time())
+	end
+	if pcHistory.id ~= "" then
+		peaks.reset(pcHistory.id, os.time())
 	end
 	poll()
 end

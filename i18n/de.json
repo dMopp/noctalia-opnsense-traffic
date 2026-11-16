@@ -64,20 +64,20 @@
       "label": "Symbolposition"
     },
     "hidden_interfaces": {
-      "label": "Ausgeblendete Interfaces",
-      "description": "Kennungen, Namen oder Geräte, die im Panel fehlen sollen; ihre Zähler werden nicht ausgewertet. Mit dem Augen-Knopf im Panel lassen sich weitere ausblenden."
+      "description": "Kennungen, Namen oder Geräte, die im Panel fehlen sollen; ihre Zähler werden nicht ausgewertet. Mit dem Augen-Knopf im Panel lassen sich weitere ausblenden.",
+      "label": "Ausgeblendete Interfaces"
     },
     "highlight_color": {
       "description": "Der Wert geht zwischen den beiden Hervorhebungsschwellen in diese Farbe über (braucht eine Leitungsgeschwindigkeit).",
       "label": "Hervorhebungsfarbe"
     },
     "highlight_from": {
-      "label": "Hervorheben ab (% der Leitung)",
-      "description": "Unterhalb dieses Anteils der Leitung bleibt der Wert in der Leistenfarbe."
+      "description": "Unterhalb dieses Anteils der Leitung bleibt der Wert in der Leistenfarbe.",
+      "label": "Hervorheben ab (% der Leitung)"
     },
     "highlight_full": {
-      "label": "Voll hervorgehoben ab (% der Leitung)",
-      "description": "Ab diesem Anteil der Leitung hat der Wert die volle Hervorhebungsfarbe."
+      "description": "Ab diesem Anteil der Leitung hat der Wert die volle Hervorhebungsfarbe.",
+      "label": "Voll hervorgehoben ab (% der Leitung)"
     },
     "interface": {
       "description": "Kennung (opt1), Name (WAN) oder Gerät (pppoe0). Das Panel listet alle auf.",
@@ -95,12 +95,12 @@
       "label": "Leitung Upload (Mbit/s)"
     },
     "local_interface": {
-      "label": "Interface des PCs",
-      "description": "Netzwerk-Interface dieses PCs, z. B. enp6s0. Leer: Summe aller physischen Interfaces, wie beim eingebauten Netzwerk-Widget."
+      "description": "Netzwerk-Interface dieses PCs, z. B. enp6s0. Leer: Summe aller physischen Interfaces, wie beim eingebauten Netzwerk-Widget.",
+      "label": "Interface des PCs"
     },
     "peak_hold_hours": {
-      "label": "Spitzen merken (Stunden)",
-      "description": "Wie lange eine gemessene Spitze für die adaptive Skala zählt (ohne Leitungsgeschwindigkeit). 0 = bis zum Zurücksetzen im Panel. Wird gespeichert und übersteht Neustarts. Erzeugt keine zusätzlichen API-Abfragen."
+      "description": "Wie lange eine gemessene Spitze für die adaptive Skala zählt (ohne Leitungsgeschwindigkeit). 0 = bis zum Zurücksetzen im Panel. Wird gespeichert und übersteht Neustarts. Erzeugt keine zusätzlichen API-Abfragen.",
+      "label": "Spitzen merken (Stunden)"
     },
     "poll_interval": {
       "description": "Sekunden zwischen zwei API-Abfragen.",
@@ -110,8 +110,8 @@
       "label": "Symbol anzeigen"
     },
     "show_local": {
-      "label": "Rate dieses PCs anzeigen",
-      "description": "Zeigt die eigene Rate dieses Rechners in Klammern daneben, z. B. 4.9M (1.2M), aus Noctalias Systemmonitor."
+      "description": "Zeigt die eigene Rate dieses PCs in Klammern neben dem Firewall-Wert, mit eigener Gauge bzw. eigenem Graph, skaliert auf die Spitze des PCs, z. B. 6.9M (9.6k). Tooltip und Panel bekommen einen Block „Dieser PC“. Gelesen aus Noctalias Systemmonitor.",
+      "label": "Rate dieses PCs anzeigen"
     },
     "show_units": {
       "label": "Einheiten anzeigen"
@@ -143,8 +143,8 @@
       "none": "Keine"
     },
     "wan_interfaces": {
-      "label": "WAN-seitige Interfaces",
-      "description": "Interfaces, die aus Sicht der Firewall gezählt werden (empfangen = Download). Alle anderen zählen aus Sicht des Netzes dahinter, Download ist also, was ihre Geräte laden. Leer: Interfaces mit Default-Route plus alle mit „wan“ in Kennung oder Name."
+      "description": "Interfaces, die aus Sicht der Firewall gezählt werden (empfangen = Download). Alle anderen zählen aus Sicht des Netzes dahinter, Download ist also, was ihre Geräte laden. Leer: Interfaces mit Default-Route plus alle mit „wan“ in Kennung oder Name.",
+      "label": "WAN-seitige Interfaces"
     }
   },
   "tooltip": {

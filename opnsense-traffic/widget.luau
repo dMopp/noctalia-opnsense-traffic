@@ -171,12 +171,9 @@ local function gauge(progress, color, vertical)
 	}, children)
 end
 
-local function graph(color, vertical)
-	local history = snapshot.history or {}
-	local series = (isUpload() and history.tx or history.rx) or {}
-	local max = scaleMax()
+local function graphOf(series, max, color, vertical)
 	local values = {}
-	for i, v in ipairs(series) do
+	for i, v in ipairs(series or {}) do
 		values[i] = max > 0 and math.max(0, math.min(1, v / max)) or 0
 	end
 	return ui.graph({
@@ -187,6 +184,11 @@ local function graph(color, vertical)
 		width = GRAPH_WIDTH,
 		height = vertical and GAUGE_STEM or GRAPH_HEIGHT,
 	})
+end
+
+local function graph(color, vertical)
+	local history = snapshot.history or {}
+	return graphOf(isUpload() and history.tx or history.rx, scaleMax(), color, vertical)
 end
 
 local function formatRate(value)
@@ -204,28 +206,23 @@ local function valueText(value)
 	return formatRate(value)
 end
 
--- This PC's own rate from Noctalia's system monitor, for the value in
--- parentheses: the total over physical interfaces like the built-in widget, or
--- one interface by name. nil when turned off, the monitor is disabled or the
--- interface is unknown.
-local function localRates()
-	if config("show_local", false) ~= true or noctalia.systemStats == nil then
+-- This PC's own rate (show_local), measured by the service from Noctalia's
+-- system monitor together with its history and stored peaks. nil while off.
+local function pcSnapshot()
+	if config("show_local", false) ~= true or type(snapshot.pc) ~= "table" then
 		return nil
 	end
-	local stats = noctalia.systemStats()
-	if type(stats) ~= "table" or type(stats.net) ~= "table" then
-		return nil
-	end
-	local name = noctalia.string.trim(tostring(config("local_interface", "")))
-	if name == "" then
-		return stats.net
-	end
-	local interfaces = stats.net.interfaces
-	return type(interfaces) == "table" and interfaces[name] or nil
+	return snapshot.pc
 end
 
-local function localValue(rates)
-	return tonumber(isUpload() and rates.txBytesPerSec or rates.rxBytesPerSec) or 0
+local function pcValue(pc)
+	return tonumber(isUpload() and pc.tx or pc.rx) or 0
+end
+
+-- The PC scales to its own peak: a PC can exceed the internet line on LAN
+-- transfers, so the line speed does not apply to it.
+local function pcMax(pc)
+	return tonumber(isUpload() and pc.peakTx or pc.peakRx) or 0
 end
 
 local function tooltip()
@@ -247,14 +244,13 @@ local function tooltip()
 		table.insert(rows, { key = "", value = "↑ " .. format.rate(tonumber(tx) or 0, unit, false) })
 	end
 	block(name, snapshot.rx, snapshot.tx)
-	local rates = localRates()
-	if rates ~= nil then
+	local pc = pcSnapshot()
+	if pc ~= nil then
 		local pcName = noctalia.tr("tooltip.this_pc")
-		local localName = noctalia.string.trim(tostring(config("local_interface", "")))
-		if localName ~= "" then
-			pcName = pcName .. " (" .. localName .. ")"
+		if pc.name ~= nil and pc.name ~= "" then
+			pcName = pcName .. " (" .. pc.name .. ")"
 		end
-		block(pcName, rates.rxBytesPerSec, rates.txBytesPerSec)
+		block(pcName, pc.rx, pc.tx)
 	end
 	return rows
 end
@@ -288,35 +284,25 @@ local function render()
 		visualization = graph(color, vertical)
 	end
 
+	local showValue = config("show_value", true) ~= false
 	local label = nil
-	if config("show_value", true) ~= false then
-		local text = valueText(value)
-		local rates = localRates()
-		local localText = rates ~= nil and "(" .. formatRate(localValue(rates)) .. ")" or nil
-		if localText ~= nil and not vertical then
-			text = text .. " " .. localText
-		end
-		local props = { text = text, color = color, textAlign = vertical and "center" or "end" }
+	if showValue then
+		local props = { text = valueText(value), color = color, textAlign = vertical and "center" or "end" }
 		if vertical then
 			props.fontSize = 13
 		end
 		local minWidth = tonumber(config("label_min_width", 0)) or 0
 		if minWidth > 0 and not vertical then
 			label = ui.row({ minWidth = minWidth, justify = "end", align = "center" }, { ui.label(props) })
-		elseif localText ~= nil and vertical then
-			-- A side bar is too narrow for both values on one line.
-			label = ui.column({ gap = 0, align = "center" }, {
-				ui.label(props),
-				ui.label({ text = localText, color = color, textAlign = "center", fontSize = 11 }),
-			})
 		else
 			label = ui.label(props)
 		end
 	end
 
+	local glyphAfter = config("glyph_position", "before") == "after"
 	local parts = {}
 	local ordered = { identity, visualization, label }
-	if config("glyph_position", "before") == "after" then
+	if glyphAfter then
 		ordered = { label, visualization, identity }
 	end
 	for i = 1, 3 do
@@ -324,6 +310,52 @@ local function render()
 			table.insert(parts, ordered[i])
 		end
 	end
+
+	-- This PC in parentheses, drawn like the firewall value: the same gauge or
+	-- graph (scaled to the PC's own peak) and value, in the bar's own color.
+	local pc = pcSnapshot()
+	if pc ~= nil then
+		local pcVal = shownStale and 0 or pcValue(pc)
+		local max = pcMax(pc)
+		local pcVisualization = nil
+		if mode == "gauge" then
+			pcVisualization = gauge(max > 0 and math.max(0, math.min(1, pcVal / max)) or 0, nil, vertical)
+		elseif mode == "graph" then
+			pcVisualization = graphOf(isUpload() and pc.txHistory or pc.rxHistory, max, nil, vertical)
+		end
+		local pcText = showValue and formatRate(pcVal) or nil
+		if vertical then
+			-- A side bar is too narrow for both values on one line.
+			local items = {}
+			if pcVisualization ~= nil then
+				table.insert(items, pcVisualization)
+			end
+			if pcText ~= nil then
+				table.insert(items, ui.label({ text = "(" .. pcText .. ")", textAlign = "center", fontSize = 11 }))
+			end
+			if #items > 0 then
+				table.insert(parts, ui.column({ gap = GAP, align = "center" }, items))
+			end
+		elseif pcVisualization ~= nil or pcText ~= nil then
+			local inner = { pcVisualization, pcText ~= nil and ui.label({ text = pcText }) or nil }
+			if glyphAfter then
+				inner = { inner[2], inner[1] }
+			end
+			local content = {}
+			for i = 1, 2 do
+				if inner[i] ~= nil then
+					table.insert(content, inner[i])
+				end
+			end
+			-- The parentheses sit right against the content, like text.
+			table.insert(parts, ui.row({ gap = 0, align = "center" }, {
+				ui.label({ text = "(" }),
+				ui.row({ gap = GAP, align = "center" }, content),
+				ui.label({ text = ")" }),
+			}))
+		end
+	end
+
 	if #parts == 0 then
 		parts[1] = ui.glyph({ name = isUpload() and "upload" or "download" })
 	end

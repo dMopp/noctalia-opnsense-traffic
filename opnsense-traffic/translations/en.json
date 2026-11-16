@@ -110,7 +110,7 @@
       "label": "Show glyph"
     },
     "show_local": {
-      "description": "Adds this computer's own rate in parentheses, e.g. 4.9M (1.2M), from Noctalia's system monitor.",
+      "description": "Adds this PC's own rate in parentheses next to the firewall value, with its own gauge or graph scaled to the PC's peak, e.g. 6.9M (9.6k). Also adds a This PC block to tooltip and panel. Read from Noctalia's system monitor.",
       "label": "Show this PC's rate"
     },
     "show_units": {
