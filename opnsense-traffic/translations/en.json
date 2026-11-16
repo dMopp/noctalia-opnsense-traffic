@@ -31,6 +31,7 @@
     "hold_unlimited": "Peaks are kept until reset",
     "interfaces": "Interfaces",
     "of_line": "line {line}",
+    "of_link": "link {line}",
     "peak": "Peak {peak} at {at} · measured since {since}",
     "reset_peaks": "Reset peaks",
     "show": "Show this interface again",
@@ -110,7 +111,7 @@
       "label": "Show glyph"
     },
     "show_local": {
-      "description": "Adds this PC's own rate in parentheses next to the firewall value, with its own gauge or graph scaled to the PC's peak, e.g. 6.9M (9.6k). Also adds a This PC block to tooltip and panel. Read from Noctalia's system monitor.",
+      "description": "Adds this PC's own rate in parentheses next to the firewall value, with its own gauge or graph scaled to the link speed of the network card, e.g. 6.9M (9.6k). Also adds a This PC block to tooltip and panel. Read from Noctalia's system monitor.",
       "label": "Show this PC's rate"
     },
     "show_units": {

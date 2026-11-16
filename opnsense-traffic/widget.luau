@@ -207,7 +207,7 @@ local function valueText(value)
 end
 
 -- This PC's own rate (show_local), measured by the service from Noctalia's
--- system monitor together with its history and stored peaks. nil while off.
+-- system monitor together with its history and link speed. nil while off.
 local function pcSnapshot()
 	if config("show_local", false) ~= true or type(snapshot.pc) ~= "table" then
 		return nil
@@ -219,10 +219,19 @@ local function pcValue(pc)
 	return tonumber(isUpload() and pc.tx or pc.rx) or 0
 end
 
--- The PC scales to its own peak: a PC can exceed the internet line on LAN
--- transfers, so the line speed does not apply to it.
+-- The PC scales to the link speed of its network card: it can exceed the
+-- internet line on LAN transfers. Without a link speed (wireless, card down)
+-- the highest value in the visible history stands in.
 local function pcMax(pc)
-	return tonumber(isUpload() and pc.peakTx or pc.peakRx) or 0
+	local linkSpeed = tonumber(pc.link) or 0
+	if linkSpeed > 0 then
+		return linkSpeed
+	end
+	local max = 0
+	for _, v in ipairs((isUpload() and pc.txHistory or pc.rxHistory) or {}) do
+		max = math.max(max, tonumber(v) or 0)
+	end
+	return max
 end
 
 local function tooltip()
@@ -312,7 +321,7 @@ local function render()
 	end
 
 	-- This PC in parentheses, drawn like the firewall value: the same gauge or
-	-- graph (scaled to the PC's own peak) and value, in the bar's own color.
+	-- graph (scaled to the link speed) and value, in the bar's own color.
 	local pc = pcSnapshot()
 	if pc ~= nil then
 		local pcVal = shownStale and 0 or pcValue(pc)

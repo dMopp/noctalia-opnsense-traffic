@@ -274,32 +274,77 @@ check("http refused", published.error, "errors.insecure_url")
 check("no request over http", #httpQueue + #spawned, before)
 
 -- This PC: sampled from the system monitor on every poll, even while the
--- firewall side fails; one stored peak per source.
+-- firewall side fails; scaled to the link speed read from sysfs.
 local pcSample = { sampledAtMs = 1, net = { rxBytesPerSec = 2000, txBytesPerSec = 300, interfaces = { enp6s0 = { rxBytesPerSec = 500, txBytesPerSec = 70 } } } }
 noctalia.systemStats = function()
 	return pcSample
+end
+local sysfs = { enp6s0 = "1000\n", eth1 = "100\n", wlp7s0 = nil }
+noctalia.listDir = function()
+	return { "enp6s0", "eth1", "wlp7s0", "lo" }
+end
+local baseExists = noctalia.fileExists
+noctalia.fileExists = function(p)
+	local nic = p:match("^/sys/class/net/([^/]+)/device$")
+	if nic ~= nil then
+		return nic ~= "lo"
+	end
+	return baseExists(p)
+end
+noctalia.readFileAsync = function(p, cb)
+	local nic = p:match("^/sys/class/net/([^/]+)/speed$")
+	local contents = nic and sysfs[nic] or nil
+	cb(contents, contents == nil and "EINVAL" or nil)
+	return true
 end
 tick(2)
 check("pc off by default", published.pc, nil)
 settings.show_local = true
 tick(2)
 check("pc total rate", published.pc.rx, 2000)
-check("pc id", published.pc.id, "pc:total")
-check("pc peak", published.pc.peakRx, 2000)
+check("pc link sums physical cards", published.pc.link, 1100 * 125000)
 check("pc history", #published.pc.rxHistory, 1)
 tick(2)
 check("same monitor sample counted once", #published.pc.rxHistory, 1)
 pcSample = { sampledAtMs = 2, net = { rxBytesPerSec = 800, txBytesPerSec = 100, interfaces = pcSample.net.interfaces } }
 tick(2)
 check("pc new rate", published.pc.rx, 800)
-check("pc peak kept", published.pc.peakRx, 2000)
 settings.local_interface = "enp6s0"
 tick(2)
 check("pc interface", published.pc.rx, 500)
-check("pc interface id", published.pc.id, "pc:enp6s0")
+check("pc interface link", published.pc.link, 1000 * 125000)
+settings.local_interface = "wlp7s0"
+pcSample.net.interfaces.wlp7s0 = { rxBytesPerSec = 10, txBytesPerSec = 1 }
+tick(2)
+check("pc without link speed", published.pc.link, 0)
 settings.local_interface = "wlan9"
 tick(2)
 check("pc unknown interface", published.pc, nil)
+
+-- The link speed is read once, not on every poll.
+local speedReads = 0
+local countingRead = noctalia.readFileAsync
+noctalia.readFileAsync = function(p, cb)
+	speedReads += 1
+	return countingRead(p, cb)
+end
+settings.local_interface = "enp6s0"
+tick(2)
+local afterChange = speedReads
+tick(2)
+tick(2)
+check("link read once per interface", speedReads, afterChange)
+check("link read on interface change", afterChange, 1)
+tick(60)
+check("link read again after waking up", speedReads, afterChange + 1)
+settings.local_interface = "wlp7s0"
+tick(2)
+local wifiReads = speedReads
+tick(2)
+check("unknown link not re-read at once", speedReads, wifiReads)
+tick(31)
+check("unknown link retried", speedReads > wifiReads, true)
+noctalia.readFileAsync = countingRead
 settings.local_interface = nil
 settings.show_local = nil
 noctalia.systemStats = nil
@@ -379,7 +424,7 @@ watchers["opnsense_snapshot"](good)
 check("widget recovers", texts(shown), "1.0 kB/s")
 
 -- This PC in parentheses, from the service's snapshot.
-good.pc = { id = "pc:total", name = "", rx = 2000, tx = 3000, rxHistory = {}, txHistory = {}, peakRx = 4000, peakTx = 3000 }
+good.pc = { name = "", rx = 2000, tx = 3000, rxHistory = {}, txHistory = {}, link = 125000000 }
 watchers["opnsense_snapshot"](good)
 check("local off by default", texts(shown), "1.0 kB/s")
 settings.show_local = true

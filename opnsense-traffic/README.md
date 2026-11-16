@@ -122,7 +122,7 @@ Plugin settings (shared by all widgets):
 | `auto_detect` | `bool` | `false` | Only while `interface` is empty: use the interface that carries the default route. Re-checked every 10 minutes. Needs **Status: Interfaces**. |
 | `poll_interval` | `int` | `2` | Seconds between two API requests (1-60). This is the only thing that sets the API load. |
 | `line_down_mbit` / `line_up_mbit` | `int` | `0` | Bandwidth of your line in Mbit/s. Scales gauge and graph and enables the highlight. `0` = adaptive: scale to the measured peak. |
-| `show_local` | `bool` | `false` | Also show this PC's own rate in parentheses next to the firewall value, drawn the same way (gauge or graph, then the value), e.g. `6.9M (9.6k)`. Its gauge and graph scale to the PC's own peak, kept like the firewall peaks. The tooltip and the panel get a "This PC" block. On a vertical bar it goes below the firewall value. |
+| `show_local` | `bool` | `false` | Also show this PC's own rate in parentheses next to the firewall value, drawn the same way (gauge or graph, then the value), e.g. `6.9M (9.6k)`. Its gauge and graph scale to the link speed of the network card (`/sys/class/net/<interface>/speed`, summed over the active physical cards when no interface is set); without one, e.g. on Wi-Fi, to the highest value in the visible history. The tooltip and the panel get a "This PC" block. On a vertical bar it goes below the firewall value. |
 | `local_interface` | `string` | `""` | PC interface for `show_local`, e.g. `enp6s0`. Empty: total of the physical interfaces, like the built-in network widgets. An unknown name shows nothing in parentheses. |
 | `peak_hold_hours` | `int` | `0` | Adaptive scale only: how long a peak counts, in hours (up to 720). `0` keeps it until **Reset peaks**. |
 | `highlight_from` / `highlight_full` | `int` | `50` / `90` | Percent of the line speed where the value starts fading to the highlight color and where it reaches it. Needs a line speed. |
@@ -179,8 +179,10 @@ noctalia msg plugin dmopp/opnsense-traffic:service all unhide opt5    # show it 
 - **This PC's rate** (`show_local`) comes from Noctalia's own system monitor
   (`noctalia.systemStats()`); no extra request or process. It follows the
   monitor's poll interval and is missing while `[system.monitor]` is disabled.
-  Its peaks go into the same `peaks.json` under `pc:total` or `pc:<interface>`,
-  and **Reset peaks** clears them together with the firewall's.
+  The link speed is read from `/sys/class/net/<interface>/speed` once, and
+  again only while it is unknown (every 30 seconds, e.g. a card without link at
+  startup), after waking up and when `local_interface` changes. Nothing is
+  written for it.
 - **Rates** are the difference of the interface byte counters between two
   polls, so they are averages over `poll_interval`. A counter that goes
   backwards (firewall reboot) is skipped for one sample. A manual refresh less

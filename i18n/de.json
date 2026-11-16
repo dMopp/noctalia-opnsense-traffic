@@ -31,6 +31,7 @@
     "hold_unlimited": "Spitzen gelten bis zum Zurücksetzen",
     "interfaces": "Interfaces",
     "of_line": "Leitung {line}",
+    "of_link": "Link {line}",
     "peak": "Spitze {peak} um {at} · gemessen seit {since}",
     "reset_peaks": "Spitzen zurücksetzen",
     "show": "Interface wieder anzeigen",
@@ -110,7 +111,7 @@
       "label": "Symbol anzeigen"
     },
     "show_local": {
-      "description": "Zeigt die eigene Rate dieses PCs in Klammern neben dem Firewall-Wert, mit eigener Gauge bzw. eigenem Graph, skaliert auf die Spitze des PCs, z. B. 6.9M (9.6k). Tooltip und Panel bekommen einen Block „Dieser PC“. Gelesen aus Noctalias Systemmonitor.",
+      "description": "Zeigt die eigene Rate dieses PCs in Klammern neben dem Firewall-Wert, mit eigener Gauge bzw. eigenem Graph, skaliert auf die Link-Geschwindigkeit der Netzwerkkarte, z. B. 6.9M (9.6k). Tooltip und Panel bekommen einen Block „Dieser PC“. Gelesen aus Noctalias Systemmonitor.",
       "label": "Rate dieses PCs anzeigen"
     },
     "show_units": {
